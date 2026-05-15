@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pos Indonesia - Tarif Negotiable Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Gantari:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { --pos-blue: #1C2D5A; --pos-orange: #EF4123; --bg: #F8FAFC; --transition: all 0.2s ease; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { font-family: 'Gantari', sans-serif; background-color: var(--bg); color: #1E293B; padding-bottom: 150px; line-height: 1.5; }
+        
+        header { 
+            position: sticky; top: 0; width: 100%; min-height: 70px; background: white; 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 1000; 
+            flex-wrap: wrap; gap: 10px;
+        }
+        .logo-left { height: 30px; } .logo-right { height: 25px; }
+
+        .wrapper { max-width: 1350px; margin: 20px auto; padding: 0 15px; }
+        
+        .hero-section { margin-bottom: 20px; border-left: 5px solid var(--pos-orange); padding-left: 15px; }
+        .hero-section h1 { font-family: 'Sora'; color: var(--pos-blue); font-size: 20px; }
+
+        .global-card { 
+            background: white; padding: 20px; border-radius: 15px; 
+            margin-bottom: 20px; border: 1px solid #E2E8F0;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-weight: 600; font-size: 13px; color: #64748B; display: flex; align-items: center; gap: 5px; }
+        input, select { 
+            padding: 12px; border: 1.5px solid #E2E8F0; border-radius: 10px; 
+            font-size: 14px; font-family: inherit; width: 100%;
+        }
+        input:focus, select:focus { border-color: var(--pos-blue); outline: none; box-shadow: 0 0 0 3px rgba(28, 45, 90, 0.05); }
+
+        .tooltip { position: relative; display: inline-block; cursor: pointer; color: #94A3B8; margin-left: 4px; font-size: 13px; }
+        .tooltip .tooltiptext {
+            visibility: hidden; width: 220px; background-color: #1e293b; color: #fff; text-align: left; 
+            border-radius: 8px; padding: 10px 12px; position: absolute; z-index: 9999; bottom: 140%; left: 50%;
+            transform: translateX(-50%); opacity: 0; transition: opacity 0.2s, transform 0.2s; font-size: 12px; font-weight: 400;
+            line-height: 1.4; box-shadow: 0 10px 20px rgba(0,0,0,0.15); text-transform: none; font-family: 'Gantari', sans-serif;
+        }
+        .tooltip .tooltiptext::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+        .tooltip:hover .tooltiptext, .tooltip:active .tooltiptext, .tooltip:focus .tooltiptext { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-3px); }
+
+        .table-container { background: transparent; overflow: visible; }
+        .mobile-label { display: none; }
+
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr { display: block; width: 100%; }
+            thead { display: none; }
+            tr { background: white; margin-bottom: 20px; border-radius: 15px; padding: 15px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative; }
+            td { padding: 8px 0; border: none; display: flex; flex-direction: column; }
+            .mobile-label { display: flex; align-items: center; font-weight: 700; font-size: 11px; color: var(--pos-orange); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+            .btn-delete-container { position: absolute; top: 15px; right: 15px; }
+        }
+
+        @media (min-width: 769px) {
+            .table-container { background: white; border-radius: 15px; border: 1px solid #E2E8F0; overflow: visible; }
+            table { width: 100%; border-collapse: separate; border-spacing: 0; }
+            th { background: #F1F5F9; color: var(--pos-blue); font-family: 'Sora'; padding: 15px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #E2E8F0; position: sticky; top: 0; z-index: 10; letter-spacing: 0.5px; }
+            th:first-child { border-top-left-radius: 15px; }
+            th:last-child { border-top-right-radius: 15px; }
+            td { padding: 10px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+            .row-input { border: 1px solid transparent; padding: 8px; border-radius: 6px; font-size: 13px; transition: 0.2s; }
+            .row-input:hover { background: #F8FAFC; border-color: #CBD5E1; }
+            .row-input:focus { border-color: var(--pos-blue); background: white; outline: none; }
+        }
+
+        .btn-add { background: white; color: var(--pos-blue); border: 2px dashed #CBD5E1; width: 100%; padding: 15px; cursor: pointer; font-weight: 700; border-radius: 15px; margin-top: 10px; transition: 0.2s; font-family: 'Sora'; }
+        .btn-add:hover { border-color: var(--pos-orange); color: var(--pos-orange); background: #FFF5F3; }
+
+        .signature-footer { margin-top: 30px; text-align: center; color: #94A3B8; font-size: 12px; }
+        .gemini-tag { font-weight: 700; background: linear-gradient(90deg, #4285F4, #9B72CB); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .footer-actions { 
+            position: fixed; bottom: 0; width: 100%; background: white; 
+            padding: 15px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 1000;
+        }
+        
+        .btn-download { background: var(--pos-orange); color: white; border: none; padding: 14px 40px; font-size: 16px; font-weight: 700; font-family: 'Sora'; border-radius: 12px; cursor: pointer; width: 100%; max-width: 400px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+        @media (min-width: 769px) {
+            .footer-actions { flex-direction: row; justify-content: space-between; padding: 15px 60px; }
+            .btn-download { width: auto; }
+            .btn-add { border-radius: 0 0 15px 15px; margin-top: 0; border-top: none; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Danantara_Indonesia_%28no_SW%29.svg/960px-Danantara_Indonesia_%28no_SW%29.svg.png" class="logo-left" alt="Danantara">
+    <img src="https://admin-piol.posindonesia.co.id/media/logo-posind-dark-1.png" class="logo-right" alt="PosIND">
+</header>
+
+<div class="wrapper">
+    <div class="hero-section">
+        <h1>Bulk Tariff Template</h1>
+        <p style="color:#64748B; font-size:13px;">Website untuk membantu create file xlsx Tarif Negotiable Pos Indonesia</p>
+    </div>
+
+    <div class="global-card">
+        <div class="form-group">
+            <label>ID Pelanggan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">Kode unik pelanggan dari sistem (contoh: KESPV01294A).</span></div></label>
+            <input type="text" id="global_customer_code" placeholder="Masukkan ID">
+        </div>
+        <div class="form-group">
+            <label>No. Salesforce <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">Nomor kontrak/produk. Otomatis ditambah tanda petik (') di Excel.</span></div></label>
+            <input type="text" id="global_salesforce" placeholder="914372">
+        </div>
+        <div class="form-group">
+            <label>Tgl Mulai</label>
+            <input type="date" id="global_start">
+        </div>
+        <div class="form-group">
+            <label>Tgl Berakhir</label>
+            <input type="date" id="global_end">
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="tariffTable">
+            <thead>
+                <tr>
+                    <th width="11%">Asal <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos asal. Otomatis ditambah (') di Excel.</span></div></th>
+                    <th width="11%">Tujuan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos tujuan. Otomatis ditambah (') di Excel.</span></div></th>
+                    <th width="16%">Layanan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">SLA otomatis menyesuaikan (PE=411 -> 2 hari).</span></div></th>
+                    <th width="10%">Min (G)</th>
+                    <th width="12%">Tarif Min</th>
+                    <th width="10%">Klip (G)</th>
+                    <th width="12%">Tarif Klip</th>
+                    <th width="16%">Deskripsi <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">Otomatis diubah menjadi HURUF KAPITAL.</span></div></th>
+                    <th width="40"></th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr>
+                    <td>
+                        <div class="mobile-label">Asal <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos asal. Otomatis ditambah (') di Excel.</span></div></div>
+                        <input type="text" class="row-input from-code" placeholder="Kode Pos">
+                    </td>
+                    <td>
+                        <div class="mobile-label">Tujuan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos tujuan. Otomatis ditambah (') di Excel.</span></div></div>
+                        <input type="text" class="row-input to-code" placeholder="Kode Pos">
+                    </td>
+                    <td>
+                        <div class="mobile-label">Layanan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">SLA otomatis menyesuaikan.</span></div></div>
+                        <select class="row-input service-id">
+                            <option value="420">PKH (420)</option>
+                            <option value="411">POS EXPRESS (411)</option>
+                            <option value="452">PJB (452)</option>
+                            <option value="481">KBM (481)</option>
+                            <option value="408">Q9 (408)</option>
+                            <option value="453">PJM (453)</option>
+                            <option value="470">KRT (470)</option>
+                            <option value="446">EC3 (446)</option>
+                        </select>
+                    </td>
+                    <td><div class="mobile-label">Min (G)</div><input type="number" class="row-input min-gram" value="1000"></td>
+                    <td><div class="mobile-label">Tarif Min</div><input type="number" class="row-input base-1" placeholder="Harga"></td>
+                    <td><div class="mobile-label">Klip (G)</div><input type="number" class="row-input klip-gram" value="1000"></td>
+                    <td><div class="mobile-label">Tarif Klip</div><input type="number" class="row-input base-2" placeholder="Harga"></td>
+                    <td><div class="mobile-label">Deskripsi</div><input type="text" class="row-input desc" placeholder="Keterangan"></td>
+                    <td class="btn-delete-container">
+                        <button type="button" onclick="deleteRow(this)" style="border:none; background:none; color:#94A3B8; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <button type="button" class="btn-add" onclick="addRow()"><i class="fas fa-plus-circle"></i> Tambah Baris Pengiriman</button>
+
+    <div class="signature-footer">
+        <p>Solusi Digital untuk Efisiensi Operasional Pos Indonesia</p>
+        <p>Powered by <span class="gemini-tag"><i class="fas fa-sparkles"></i> Gemini AI</span></p>
+    </div>
+</div>
+
+<div class="footer-actions">
+    <div class="team-credit">
+        <i class="fas fa-code"></i> Created by : <b>newbieot</b>
+    </div>
+    <button class="btn-download" onclick="exportExcel()">
+        <i class="fas fa-file-excel"></i> Download Excel (.xlsx)
+    </button>
+</div>
+
+<script>
+    function addRow() {
+        const tbody = document.getElementById('tableBody');
+        const firstRow = tbody.querySelector('tr');
+        const newRow = firstRow.cloneNode(true);
+        newRow.querySelectorAll('input').forEach(input => {
+            if(!input.classList.contains('min-gram') && !input.classList.contains('klip-gram')) input.value = '';
+        });
+        tbody.appendChild(newRow);
+    }
+    function deleteRow(btn) { if (document.querySelectorAll('#tableBody tr').length > 1) btn.closest('tr').remove(); }
+    function exportExcel() {
+        const sfRaw = document.getElementById('global_salesforce').value;
+        const sfNum = Number(sfRaw.replace(/[^0-9]/g, ''));
+        const custCode = document.getElementById('global_customer_code').value.toUpperCase();
+        const start = document.getElementById('global_start').value;
+        const end = document.getElementById('global_end').value;
+        if(!custCode || !sfRaw || !start || !end) { alert("Harap lengkapi Data Header!"); return; }
+        const data = [["tariff_from_code", "tariff_to_code", "service_id", "tariff_sla_day", "tariff_sla_hours", "tariff_formula_id", "tariff_formula_data", "expiry_start", "expiry_end", "customer_type_code", "disableTariff", "tariff_sub_service_code", "tariff_sub_service_description"]];
+        document.querySelectorAll('#tableBody tr').forEach(row => {
+            const sid = Number(row.querySelector('.service-id').value);
+            const formula = {
+                actual_weight_1: Number(row.querySelector('.min-gram').value),
+                base_tariff_1: Number(row.querySelector('.base-1').value),
+                base_tariff_2: Number(row.querySelector('.base-2').value),
+                kelipatan: Number(row.querySelector('.klip-gram').value),
+                kdlayanan_pelanggan: sfNum 
+            };
+            data.push([
+                "'" + row.querySelector('.from-code').value,
+                "'" + row.querySelector('.to-code').value,
+                sid,
+                (sid === 411 ? 2 : 30),
+                (sid === 411 ? 48 : 720),
+                1644,
+                JSON.stringify(formula),
+                start, end, custCode, 0,
+                "'" + sfRaw,
+                row.querySelector('.desc').value.toUpperCase()
+            ]);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        ws['!cols'] = [{wch:15},{wch:15},{wch:10},{wch:12},{wch:12},{wch:15},{wch:60},{wch:12},{wch:12},{wch:20},{wch:10},{wch:20},{wch:35}];
+        XLSX.utils.book_append_sheet(wb, ws, "TariffCustomer");
+        XLSX.writeFile(wb, `Tarif_Negotiable_${sfRaw}.xlsx`);
+    }
+</script>
+</body>
+</html>
