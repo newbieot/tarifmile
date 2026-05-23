@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pos Indonesia - Tarif Negotiable Tool</title>
-    <link rel="icon" type="image/png" href="favicon-tarifmile.png">
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Gantari:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -114,7 +113,7 @@
             <input type="text" id="global_customer_code" placeholder="Masukkan ID">
         </div>
         <div class="form-group">
-            <label>No. Salesforce <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">Nomor kontrak/produk. Otomatis ditambah tanda petik (') di Excel.</span></div></label>
+            <label>No. Salesforce <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">Nomor kontrak/produk. Otomatis diformat sebagai Text Murni di Excel.</span></div></label>
             <input type="text" id="global_salesforce" placeholder="914372">
         </div>
         <div class="form-group">
@@ -131,8 +130,8 @@
         <table id="tariffTable">
             <thead>
                 <tr>
-                    <th width="11%">Asal <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos asal. Otomatis ditambah (') di Excel.</span></div></th>
-                    <th width="11%">Tujuan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos tujuan. Otomatis ditambah (') di Excel.</span></div></th>
+                    <th width="11%">Asal <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos asal. Otomatis diformat sebagai Text Murni di Excel.</span></div></th>
+                    <th width="11%">Tujuan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos tujuan. Otomatis diformat sebagai Text Murni di Excel.</span></div></th>
                     <th width="16%">Layanan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">SLA otomatis menyesuaikan (PE=411 -> 2 hari).</span></div></th>
                     <th width="10%">Min (G)</th>
                     <th width="12%">Tarif Min</th>
@@ -145,11 +144,11 @@
             <tbody id="tableBody">
                 <tr>
                     <td>
-                        <div class="mobile-label">Asal <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos asal. Otomatis ditambah (') di Excel.</span></div></div>
+                        <div class="mobile-label">Asal <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos asal.</span></div></div>
                         <input type="text" class="row-input from-code" placeholder="Kode Pos">
                     </td>
                     <td>
-                        <div class="mobile-label">Tujuan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos tujuan. Otomatis ditambah (') di Excel.</span></div></div>
+                        <div class="mobile-label">Tujuan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos tujuan.</span></div></div>
                         <input type="text" class="row-input to-code" placeholder="Kode Pos">
                     </td>
                     <td>
@@ -206,15 +205,32 @@
         tbody.appendChild(newRow);
     }
     function deleteRow(btn) { if (document.querySelectorAll('#tableBody tr').length > 1) btn.closest('tr').remove(); }
+    
     function exportExcel() {
         const sfRaw = document.getElementById('global_salesforce').value;
         const sfNum = Number(sfRaw.replace(/[^0-9]/g, ''));
         const custCode = document.getElementById('global_customer_code').value.toUpperCase();
         const start = document.getElementById('global_start').value;
         const end = document.getElementById('global_end').value;
+        
         if(!custCode || !sfRaw || !start || !end) { alert("Harap lengkapi Data Header!"); return; }
-        const data = [["tariff_from_code", "tariff_to_code", "service_id", "tariff_sla_day", "tariff_sla_hours", "tariff_formula_id", "tariff_formula_data", "expiry_start", "expiry_end", "customer_type_code", "disableTariff", "tariff_sub_service_code", "tariff_sub_service_description"]];
-        document.querySelectorAll('#tableBody tr').forEach(row => {
+        
+        // Headers List
+        const headers = ["tariff_from_code", "tariff_to_code", "service_id", "tariff_sla_day", "tariff_sla_hours", "tariff_formula_id", "tariff_formula_data", "expiry_start", "expiry_end", "customer_type_code", "disableTariff", "tariff_sub_service_code", "tariff_sub_service_description"];
+        
+        const wb = XLSX.utils.book_new();
+        const ws = {};
+
+        // Write Headers to cell object explicitly
+        headers.forEach((header, colIndex) => {
+            const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
+            ws[cellRef] = { v: header, t: 's' };
+        });
+
+        const rows = document.querySelectorAll('#tableBody tr');
+        
+        rows.forEach((row, rowIndex) => {
+            const rIdx = rowIndex + 1; // Row index 1 is data row 1
             const sid = Number(row.querySelector('.service-id').value);
             const formula = {
                 actual_weight_1: Number(row.querySelector('.min-gram').value),
@@ -223,22 +239,34 @@
                 kelipatan: Number(row.querySelector('.klip-gram').value),
                 kdlayanan_pelanggan: sfNum 
             };
-            data.push([
-                "'" + row.querySelector('.from-code').value,
-                "'" + row.querySelector('.to-code').value,
-                sid,
-                (sid === 411 ? 2 : 30),
-                (sid === 411 ? 48 : 720),
-                1644,
-                JSON.stringify(formula),
-                start, end, custCode, 0,
-                "'" + sfRaw,
-                row.querySelector('.desc').value.toUpperCase()
-            ]);
+
+            const fromVal = row.querySelector('.from-code').value;
+            const toVal = row.querySelector('.to-code').value;
+            const descVal = row.querySelector('.desc').value.toUpperCase();
+
+            // FORCE 's' (String type) for numeric codes to trigger the green triangle warning in Excel
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 0 })] = { v: fromVal, t: 's' }; // tariff_from_code
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 1 })] = { v: toVal, t: 's' };   // tariff_to_code
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 2 })] = { v: sid, t: 'n' };     // service_id (number)
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 3 })] = { v: (sid === 411 ? 2 : 30), t: 'n' };
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 4 })] = { v: (sid === 411 ? 48 : 720), t: 'n' };
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 5 })] = { v: 1644, t: 'n' };
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 6 })] = { v: JSON.stringify(formula), t: 's' };
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 7 })] = { v: start, t: 's' };
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 8 })] = { v: end, t: 's' };
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 9 })] = { v: custCode, t: 's' };
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 10 })] = { v: 0, t: 'n' };
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 11 })] = { v: sfRaw, t: 's' };  // tariff_sub_service_code
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 12 })] = { v: descVal, t: 's' };
         });
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(data);
+
+        // Define Range
+        const maxRow = rows.length;
+        ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxRow, c: 12 } });
+
+        // Format column widths
         ws['!cols'] = [{wch:15},{wch:15},{wch:10},{wch:12},{wch:12},{wch:15},{wch:60},{wch:12},{wch:12},{wch:20},{wch:10},{wch:20},{wch:35}];
+        
         XLSX.utils.book_append_sheet(wb, ws, "TariffCustomer");
         XLSX.writeFile(wb, `Tarif_Negotiable_${sfRaw}.xlsx`);
     }
