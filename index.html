@@ -161,38 +161,52 @@
             box-shadow: 0 6px 20px rgba(239, 65, 35, 0.35);
         }
 
-        /* Modern SaaS Footer (SLIM, DARK & FULL-WIDTH) */
-        .modern-footer {
-            width: 100%; 
-            box-sizing: border-box; 
-            margin-top: 4rem; 
-            padding: 2rem 1rem 1.5rem 1rem; 
-            background-color: #0f172a; 
-            border-top: 4px solid var(--pos-orange); 
+        /* DASHBOARD FOOTER (UNIVERSAL & MUTLAK 1 BARIS) */
+        .dashboard-footer {
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #0f172a;
+            border-top: 3px solid #EF4123;
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
             align-items: center;
-            gap: 0.8rem; 
-            font-family: 'Gantari', sans-serif;
+            padding: 0 24px;
+            margin-top: auto;
+            font-family: 'Gantari', 'Segoe UI', sans-serif;
+            z-index: 20;
+            height: 60px; /* Mengunci tinggi agar mutlak 1 baris */
+            overflow: hidden;
         }
         .footer-brand {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #f8fafc; 
-            font-weight: 700;
-            font-size: 1.1rem;
-            font-family: 'Sora', sans-serif;
-            letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 8px;
+            color: #f8fafc; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.5px;
+            white-space: nowrap; font-family: 'Sora', sans-serif;
         }
-        .footer-desc { color: #94a3b8; font-size: 0.85rem; text-align: center; max-width: 500px; line-height: 1.5; margin: 0; }
+        .footer-desc { 
+            color: #94a3b8; font-size: 0.8rem; margin: 0 15px; 
+            white-space: nowrap; /* Mencegah teks turun ke baris kedua */
+            overflow: hidden; text-overflow: ellipsis;
+            text-align: center; flex: 1;
+        }
         .footer-creator-badge {
-            margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 8px;
+            display: inline-flex; align-items: center; gap: 6px;
             background: rgba(239, 65, 35, 0.1); border: 1px solid rgba(239, 65, 35, 0.2);
-            padding: 6px 16px; border-radius: 30px; color: #e2e8f0; font-size: 0.8rem; transition: all 0.3s ease;
+            padding: 5px 14px; border-radius: 20px; color: #e2e8f0; font-size: 0.75rem;
+            white-space: nowrap; transition: all 0.3s ease;
         }
-        .footer-creator-badge:hover { background: rgba(239, 65, 35, 0.2); border-color: rgba(239, 65, 35, 0.5); transform: translateY(-2px); }
-        .footer-creator-badge strong { color: var(--pos-orange); font-weight: 600; letter-spacing: 0.3px; }
+        .footer-creator-badge:hover { 
+            background: rgba(239, 65, 35, 0.2); border-color: rgba(239, 65, 35, 0.5); 
+        }
+        .footer-creator-badge strong { color: #EF4123; font-weight: 600; }
+
+        /* Responsif Mobile */
+        @media (max-width: 850px) {
+            .dashboard-footer { 
+                flex-direction: column; justify-content: center; gap: 8px; 
+                padding: 15px; height: auto; 
+            }
+            .footer-desc { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -365,14 +379,12 @@
     }
 </script>
 
-<footer class="modern-footer">
+<footer class="dashboard-footer">
     <div class="footer-brand">
-        <i data-lucide="layers" style="color: #EF4123; width: 20px; height: 20px;"></i>
+        <i data-lucide="layers" style="color: #EF4123; width: 18px; height: 18px;"></i>
         PosNew Hub
     </div>
-    <p class="footer-desc">
-        Sistem utilitas ini dikembangkan secara independen untuk optimalisasi efisiensi layanan logistik B2B dan Ritel.
-    </p>
+    <p class="footer-desc">Sistem utilitas ini dikembangkan secara independen untuk optimalisasi efisiensi layanan logistik B2B dan Ritel.</p>
     <div class="footer-creator-badge">
         <i data-lucide="code-2" style="color: #EF4123; width: 14px; height: 14px;"></i>
         Inovasi oleh <strong>Ikhsan Radiansyah</strong> &copy; 2026
@@ -381,7 +393,9 @@
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 </script>
 </body>
 </html>
