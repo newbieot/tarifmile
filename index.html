@@ -3,41 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pos Indonesia - Tarif Negotiable Tool by Ikhsan Radiansyah</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Gantari:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <title>Bulk Tariff Template by Ikhsan Radiansyah | PosNew Hub</title>
+    
+    <!-- Tipografi Resmi: Sora & Gantari -->
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Gantari:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
-        :root { --pos-blue: #1C2D5A; --pos-orange: #EF4123; --bg: #F8FAFC; --transition: all 0.2s ease; }
+        :root { 
+            --pos-blue: #1C2D5A; 
+            --pos-orange: #EF4123; 
+            --bg: #F4F6F9; 
+            --transition: all 0.2s ease; 
+        }
+        
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        body { font-family: 'Gantari', sans-serif; background-color: var(--bg); color: #1E293B; padding-bottom: 150px; line-height: 1.5; }
+        body { 
+            font-family: 'Gantari', sans-serif; 
+            background-color: var(--bg); 
+            color: #334155; 
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            line-height: 1.5; 
+        }
         
         header { 
             position: sticky; top: 0; width: 100%; min-height: 70px; background: white; 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 10px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 1000; 
-            flex-wrap: wrap; gap: 10px;
+            padding: 15px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 1000; 
         }
-        .logo-left { height: 30px; } .logo-right { height: 25px; }
+        .logo-left { height: 32px; object-fit: contain; } 
+        .logo-right { height: 38px; object-fit: contain; }
 
-        .wrapper { max-width: 1350px; margin: 20px auto; padding: 0 15px; }
+        .wrapper { 
+            width: 100%;
+            max-width: 1350px; 
+            margin: 30px auto; 
+            padding: 0 20px; 
+            flex: 1; /* Memastikan konten mendorong footer ke bawah */
+        }
         
-        .hero-section { margin-bottom: 20px; border-left: 5px solid var(--pos-orange); padding-left: 15px; }
-        .hero-section h1 { font-family: 'Sora'; color: var(--pos-blue); font-size: 20px; }
+        .hero-section { 
+            margin-bottom: 25px; 
+            border-left: 5px solid var(--pos-orange); 
+            padding-left: 15px; 
+        }
+        .hero-section h1 { 
+            font-family: 'Sora', sans-serif; 
+            color: var(--pos-blue); 
+            font-size: 22px; 
+            font-weight: 700;
+        }
 
         .global-card { 
-            background: white; padding: 20px; border-radius: 15px; 
-            margin-bottom: 20px; border: 1px solid #E2E8F0;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px;
+            background: white; padding: 25px; border-radius: 16px; 
+            margin-bottom: 25px; border: 1px solid #E2E8F0;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;
+            box-shadow: 0 4px 15px rgba(28, 45, 90, 0.03);
         }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-weight: 600; font-size: 13px; color: #64748B; display: flex; align-items: center; gap: 5px; }
+        
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-weight: 600; font-size: 13px; color: var(--pos-blue); display: flex; align-items: center; gap: 5px; }
+        
         input, select { 
-            padding: 12px; border: 1.5px solid #E2E8F0; border-radius: 10px; 
-            font-size: 14px; font-family: inherit; width: 100%;
+            padding: 14px; border: 1.5px solid #E2E8F0; border-radius: 10px; 
+            font-size: 14px; font-family: 'Gantari', sans-serif; width: 100%; color: #334155;
+            transition: var(--transition);
         }
-        input:focus, select:focus { border-color: var(--pos-blue); outline: none; box-shadow: 0 0 0 3px rgba(28, 45, 90, 0.05); }
+        input:focus, select:focus { 
+            border-color: var(--pos-blue); outline: none; 
+            box-shadow: 0 0 0 3px rgba(28, 45, 90, 0.08); 
+            background-color: #F8FAFF;
+        }
 
         .tooltip { position: relative; display: inline-block; cursor: pointer; color: #94A3B8; margin-left: 4px; font-size: 13px; }
         .tooltip .tooltiptext {
@@ -59,52 +99,113 @@
             td { padding: 8px 0; border: none; display: flex; flex-direction: column; }
             .mobile-label { display: flex; align-items: center; font-weight: 700; font-size: 11px; color: var(--pos-orange); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
             .btn-delete-container { position: absolute; top: 15px; right: 15px; }
+            .header-logos { padding: 15px; }
+            .action-bar { flex-direction: column; text-align: center; gap: 20px; }
         }
 
         @media (min-width: 769px) {
-            .table-container { background: white; border-radius: 15px; border: 1px solid #E2E8F0; overflow: visible; }
+            .table-container { background: white; border-radius: 15px; border: 1px solid #E2E8F0; overflow: visible; box-shadow: 0 4px 15px rgba(28, 45, 90, 0.03); }
             table { width: 100%; border-collapse: separate; border-spacing: 0; }
-            th { background: #F1F5F9; color: var(--pos-blue); font-family: 'Sora'; padding: 15px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid #E2E8F0; position: sticky; top: 0; z-index: 10; letter-spacing: 0.5px; }
+            th { background: #F8FAFC; color: var(--pos-blue); font-family: 'Sora', sans-serif; padding: 16px; text-align: left; font-size: 12px; font-weight: 700; border-bottom: 1px solid #E2E8F0; position: sticky; top: 70px; z-index: 10; letter-spacing: 0.5px; }
             th:first-child { border-top-left-radius: 15px; }
             th:last-child { border-top-right-radius: 15px; }
-            td { padding: 10px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
-            .row-input { border: 1px solid transparent; padding: 8px; border-radius: 6px; font-size: 13px; transition: 0.2s; }
+            td { padding: 12px 10px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+            .row-input { border: 1px solid transparent; padding: 10px; border-radius: 8px; font-size: 13px; transition: 0.2s; background: transparent; }
             .row-input:hover { background: #F8FAFC; border-color: #CBD5E1; }
             .row-input:focus { border-color: var(--pos-blue); background: white; outline: none; }
         }
 
-        .btn-add { background: white; color: var(--pos-blue); border: 2px dashed #CBD5E1; width: 100%; padding: 15px; cursor: pointer; font-weight: 700; border-radius: 15px; margin-top: 10px; transition: 0.2s; font-family: 'Sora'; }
+        .btn-add { 
+            background: white; color: var(--pos-blue); border: 2px dashed #CBD5E1; 
+            width: 100%; padding: 16px; cursor: pointer; font-weight: 700; font-size: 14px;
+            border-radius: 0 0 15px 15px; transition: 0.2s; font-family: 'Sora', sans-serif; 
+        }
         .btn-add:hover { border-color: var(--pos-orange); color: var(--pos-orange); background: #FFF5F3; }
+        
+        @media (max-width: 768px) {
+            .btn-add { border-radius: 15px; border-top: 2px dashed #CBD5E1; margin-top: 10px; }
+        }
 
-        .signature-footer { margin-top: 30px; text-align: center; color: #94A3B8; font-size: 12px; }
+        /* Action Bar (Bawah Tabel) */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 35px;
+            padding-top: 25px;
+            border-top: 2px solid #E2E8F0;
+        }
+
+        .signature-footer { color: #64748B; font-size: 13px; font-weight: 500; }
         .gemini-tag { font-weight: 700; background: linear-gradient(90deg, #4285F4, #9B72CB); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        .footer-actions { 
-            position: fixed; bottom: 0; width: 100%; background: white; 
-            padding: 15px 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
-            display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 1000;
+        .btn-download { 
+            background: var(--pos-orange); 
+            color: white; 
+            border: none; 
+            padding: 15px 35px; 
+            font-size: 15px; 
+            font-weight: 700; 
+            font-family: 'Sora', sans-serif; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(239, 65, 35, 0.25);
         }
-        
-        .btn-download { background: var(--pos-orange); color: white; border: none; padding: 14px 40px; font-size: 16px; font-weight: 700; font-family: 'Sora'; border-radius: 12px; cursor: pointer; width: 100%; max-width: 400px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-download:hover {
+            background: #d13215;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 65, 35, 0.35);
+        }
 
-        @media (min-width: 769px) {
-            .footer-actions { flex-direction: row; justify-content: space-between; padding: 15px 60px; }
-            .btn-download { width: auto; }
-            .btn-add { border-radius: 0 0 15px 15px; margin-top: 0; border-top: none; }
+        /* Modern SaaS Footer (SLIM, DARK & FULL-WIDTH) */
+        .modern-footer {
+            width: 100%; 
+            box-sizing: border-box; 
+            margin-top: 4rem; 
+            padding: 2rem 1rem 1.5rem 1rem; 
+            background-color: #0f172a; 
+            border-top: 4px solid var(--pos-orange); 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem; 
+            font-family: 'Gantari', sans-serif;
         }
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #f8fafc; 
+            font-weight: 700;
+            font-size: 1.1rem;
+            font-family: 'Sora', sans-serif;
+            letter-spacing: 0.5px;
+        }
+        .footer-desc { color: #94a3b8; font-size: 0.85rem; text-align: center; max-width: 500px; line-height: 1.5; margin: 0; }
+        .footer-creator-badge {
+            margin-top: 0.5rem; display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(239, 65, 35, 0.1); border: 1px solid rgba(239, 65, 35, 0.2);
+            padding: 6px 16px; border-radius: 30px; color: #e2e8f0; font-size: 0.8rem; transition: all 0.3s ease;
+        }
+        .footer-creator-badge:hover { background: rgba(239, 65, 35, 0.2); border-color: rgba(239, 65, 35, 0.5); transform: translateY(-2px); }
+        .footer-creator-badge strong { color: var(--pos-orange); font-weight: 600; letter-spacing: 0.3px; }
     </style>
 </head>
 <body>
 
 <header>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Danantara_Indonesia_%28no_SW%29.svg/960px-Danantara_Indonesia_%28no_SW%29.svg.png" class="logo-left" alt="Danantara">
-    <img src="https://admin-piol.posindonesia.co.id/media/logo-posind-dark-1.png" class="logo-right" alt="PosIND">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Danantara_Indonesia.svg/960px-Danantara_Indonesia.svg.png?_=20250304063014" class="logo-left" alt="Danantara">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/POSIND_2023.svg/330px-POSIND_2023.svg.png" class="logo-right" alt="PosIND">
 </header>
 
 <div class="wrapper">
     <div class="hero-section">
         <h1>Bulk Tariff Template</h1>
-        <p style="color:#64748B; font-size:13px;">Website untuk membantu create file xlsx Tarif Negotiable Pos Indonesia</p>
+        <p style="color:#64748B; font-size:14px; font-weight: 500;">Website untuk membantu create file xlsx Tarif Negotiable Pos Indonesia</p>
     </div>
 
     <div class="global-card">
@@ -175,19 +276,21 @@
                 </tr>
             </tbody>
         </table>
+        <button type="button" class="btn-add" onclick="addRow()"><i class="fas fa-plus-circle"></i> Tambah Baris Pengiriman</button>
     </div>
     
-    <button type="button" class="btn-add" onclick="addRow()"><i class="fas fa-plus-circle"></i> Tambah Baris Pengiriman</button>
-
-    <div class="signature-footer">
-        <p>Solusi Digital untuk Efisiensi Operasional Pos Indonesia</p>
-        <p>Powered by <span class="gemini-tag"><i class="fas fa-sparkles"></i> Gemini AI</span></p>
+    <!-- Action Bar (Sejajar dan Rapi) -->
+    <div class="action-bar">
+        <div class="signature-footer">
+            <p>Solusi Digital untuk Efisiensi Operasional Pos Indonesia</p>
+            <p style="margin-top: 4px;">Powered by <span class="gemini-tag"><i class="fas fa-sparkles"></i> Gemini AI</span></p>
+        </div>
+        <button class="btn-download" onclick="exportExcel()">
+            <i class="fas fa-file-excel"></i> Download Excel (.xlsx)
+        </button>
     </div>
-</div>
-    <button class="btn-download" onclick="exportExcel()">
-        <i class="fas fa-file-excel"></i> Download Excel (.xlsx)
-    </button>
-</div>
+    
+</div> <!-- Penutup Wrapper Utama -->
 
 <script>
     function addRow() {
@@ -210,13 +313,11 @@
         
         if(!custCode || !sfRaw || !start || !end) { alert("Harap lengkapi Data Header!"); return; }
         
-        // Headers List
         const headers = ["tariff_from_code", "tariff_to_code", "service_id", "tariff_sla_day", "tariff_sla_hours", "tariff_formula_id", "tariff_formula_data", "expiry_start", "expiry_end", "customer_type_code", "disableTariff", "tariff_sub_service_code", "tariff_sub_service_description"];
         
         const wb = XLSX.utils.book_new();
         const ws = {};
 
-        // Write Headers to cell object explicitly
         headers.forEach((header, colIndex) => {
             const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIndex });
             ws[cellRef] = { v: header, t: 's' };
@@ -225,7 +326,7 @@
         const rows = document.querySelectorAll('#tableBody tr');
         
         rows.forEach((row, rowIndex) => {
-            const rIdx = rowIndex + 1; // Row index 1 is data row 1
+            const rIdx = rowIndex + 1; 
             const sid = Number(row.querySelector('.service-id').value);
             const formula = {
                 actual_weight_1: Number(row.querySelector('.min-gram').value),
@@ -239,10 +340,9 @@
             const toVal = row.querySelector('.to-code').value;
             const descVal = row.querySelector('.desc').value.toUpperCase();
 
-            // FORCE 's' (String type) for numeric codes to trigger the green triangle warning in Excel
-            ws[XLSX.utils.encode_cell({ r: rIdx, c: 0 })] = { v: fromVal, t: 's' }; // tariff_from_code
-            ws[XLSX.utils.encode_cell({ r: rIdx, c: 1 })] = { v: toVal, t: 's' };   // tariff_to_code
-            ws[XLSX.utils.encode_cell({ r: rIdx, c: 2 })] = { v: sid, t: 'n' };     // service_id (number)
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 0 })] = { v: fromVal, t: 's' }; 
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 1 })] = { v: toVal, t: 's' };   
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 2 })] = { v: sid, t: 'n' };     
             ws[XLSX.utils.encode_cell({ r: rIdx, c: 3 })] = { v: (sid === 411 ? 2 : 30), t: 'n' };
             ws[XLSX.utils.encode_cell({ r: rIdx, c: 4 })] = { v: (sid === 411 ? 48 : 720), t: 'n' };
             ws[XLSX.utils.encode_cell({ r: rIdx, c: 5 })] = { v: 1644, t: 'n' };
@@ -251,94 +351,34 @@
             ws[XLSX.utils.encode_cell({ r: rIdx, c: 8 })] = { v: end, t: 's' };
             ws[XLSX.utils.encode_cell({ r: rIdx, c: 9 })] = { v: custCode, t: 's' };
             ws[XLSX.utils.encode_cell({ r: rIdx, c: 10 })] = { v: 0, t: 'n' };
-            ws[XLSX.utils.encode_cell({ r: rIdx, c: 11 })] = { v: sfRaw, t: 's' };  // tariff_sub_service_code
+            ws[XLSX.utils.encode_cell({ r: rIdx, c: 11 })] = { v: sfRaw, t: 's' };  
             ws[XLSX.utils.encode_cell({ r: rIdx, c: 12 })] = { v: descVal, t: 's' };
         });
 
-        // Define Range
         const maxRow = rows.length;
         ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: maxRow, c: 12 } });
 
-        // Format column widths
         ws['!cols'] = [{wch:15},{wch:15},{wch:10},{wch:12},{wch:12},{wch:15},{wch:60},{wch:12},{wch:12},{wch:20},{wch:10},{wch:20},{wch:35}];
         
         XLSX.utils.book_append_sheet(wb, ws, "TariffCustomer");
         XLSX.writeFile(wb, `Tarif_Negotiable_${sfRaw}.xlsx`);
     }
 </script>
-    <!-- Modern SaaS Footer (SLIM, DARK & FULL-WIDTH) -->
-<style>
-    .modern-footer {
-        width: 100%; /* Memaksa footer memanjang dari ujung ke ujung */
-        box-sizing: border-box; /* Mencegah footer tumpah keluar layar */
-        margin-top: 4rem; 
-        padding: 2rem 1rem 1.5rem 1rem; 
-        background-color: #0f172a; 
-        border-top: 4px solid #FF5722; 
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.8rem; 
-        font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .footer-brand {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: #f8fafc; 
-        font-weight: 700;
-        font-size: 1.1rem;
-        letter-spacing: 0.5px;
-    }
-    .footer-desc {
-        color: #94a3b8; 
-        font-size: 0.85rem;
-        text-align: center;
-        max-width: 500px;
-        line-height: 1.5;
-        margin: 0;
-    }
-    .footer-creator-badge {
-        margin-top: 0.5rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(255, 87, 34, 0.1);
-        border: 1px solid rgba(255, 87, 34, 0.2);
-        padding: 6px 16px; 
-        border-radius: 30px;
-        color: #e2e8f0;
-        font-size: 0.8rem;
-        transition: all 0.3s ease;
-    }
-    .footer-creator-badge:hover {
-        background: rgba(255, 87, 34, 0.2);
-        border-color: rgba(255, 87, 34, 0.5);
-        box-shadow: 0 0 10px rgba(255, 87, 34, 0.2);
-        transform: translateY(-2px);
-    }
-    .footer-creator-badge strong {
-        color: #FF5722;
-        font-weight: 600;
-        letter-spacing: 0.3px;
-    }
-</style>
 
 <footer class="modern-footer">
     <div class="footer-brand">
-        <i data-lucide="layers" style="color: #FF5722; width: 20px; height: 20px;"></i>
+        <i data-lucide="layers" style="color: #EF4123; width: 20px; height: 20px;"></i>
         PosNew Hub
     </div>
     <p class="footer-desc">
         Sistem utilitas ini dikembangkan secara independen untuk optimalisasi efisiensi layanan logistik B2B dan Ritel.
     </p>
     <div class="footer-creator-badge">
-        <i data-lucide="code-2" style="color: #FF5722; width: 14px; height: 14px;"></i>
+        <i data-lucide="code-2" style="color: #EF4123; width: 14px; height: 14px;"></i>
         Inovasi oleh <strong>Ikhsan Radiansyah</strong> &copy; 2026
     </div>
 </footer>
 
-<!-- Pastikan pemanggil ikon ini tetap ada di paling bawah -->
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>
     lucide.createIcons();
