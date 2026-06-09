@@ -299,7 +299,6 @@
                     <td>
                         <div class="mobile-label">Layanan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">SLA otomatis menyesuaikan.</span></div></div>
                         <select class="row-input service-id">
-                            <option value="240">PKH (240)</option>
                             <option value="420" selected>PKH (420)</option>
                             <option value="411">POS EXPRESS (411)</option>
                             <option value="452">PJB (452)</option>
@@ -339,8 +338,6 @@
 <script>
     // FUNGSI UNTUK MEMBUAT BARIS HTML SECARA DINAMIS
     function createRowHtml(asal = '', tujuan = '', tarif = '', layanan = '') {
-        let isReguler = (layanan && layanan.toString().toUpperCase() === "REGULER");
-        
         return `
             <td>
                 <div class="mobile-label">Asal <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos asal.</span></div></div>
@@ -353,8 +350,7 @@
             <td>
                 <div class="mobile-label">Layanan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">SLA otomatis menyesuaikan.</span></div></div>
                 <select class="row-input service-id">
-                    <option value="240" ${isReguler ? 'selected' : ''}>PKH (240)</option>
-                    <option value="420" ${!isReguler ? 'selected' : ''}>PKH (420)</option>
+                    <option value="420" selected>PKH (420)</option>
                     <option value="411">POS EXPRESS (411)</option>
                     <option value="452">PJB (452)</option>
                     <option value="481">KBM (481)</option>
@@ -460,12 +456,21 @@
             tbody.innerHTML = ''; // Hapus seluruh inputan lama
             
             let addedCount = 0;
+            const seenRoutes = new Set(); // Logika Deduplikasi untuk memfilter duplikat RUTE KANTOR
+
             // Looping data mulai dari baris tepat setelah header
             for (let i = headerIdx + 1; i < rawRows.length; i++) {
                 const row = rawRows[i];
                 if (!row || row.length === 0 || !row[ruteIdx]) continue; // Lewati jika kosong
 
-                const rute = row[ruteIdx].toString();
+                const rute = row[ruteIdx].toString().trim();
+                
+                // Cek apakah rute ini sudah pernah diproses sebelumnya
+                if (seenRoutes.has(rute)) {
+                    continue; // Skip baris ini untuk mencegah duplikasi
+                }
+                seenRoutes.add(rute); // Catat rute ini sebagai sudah diproses
+
                 const tarif = row[tarifIdx] || '';
                 const layanan = row[layananIdx] || '';
 
