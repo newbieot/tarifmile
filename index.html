@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bulk Tariff Template by Ikhsan Radiansyah | PosNew Hub</title>
     
-    <!-- Tipografi Resmi: Sora & Gantari -->
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Gantari:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -43,7 +42,7 @@
             max-width: 1350px; 
             margin: 30px auto; 
             padding: 0 20px; 
-            flex: 1; /* Memastikan konten mendorong footer ke bawah */
+            flex: 1;
         }
         
         .hero-section { 
@@ -56,6 +55,56 @@
             color: var(--pos-blue); 
             font-size: 22px; 
             font-weight: 700;
+        }
+
+        /* Drag and Drop Zone Styles */
+        .drag-drop-area {
+            border: 2px dashed #CBD5E1;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            margin-bottom: 25px;
+            transition: var(--transition);
+        }
+        .drag-drop-area:hover, .drag-drop-area.dragover {
+            background: #F8FAFC;
+            border-color: var(--pos-blue);
+        }
+        .drag-drop-area p {
+            color: #64748B;
+            font-weight: 500;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+        #file_info {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            background: #F1F5F9;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
+            margin: 0 auto;
+            width: fit-content;
+        }
+        #btn_delete_file {
+            background: none;
+            border: none;
+            color: var(--pos-orange);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        #btn_delete_file:hover {
+            background: rgba(239, 65, 35, 0.1);
         }
 
         .global-card { 
@@ -126,67 +175,39 @@
             .btn-add { border-radius: 15px; border-top: 2px dashed #CBD5E1; margin-top: 10px; }
         }
 
-        /* Action Bar (Bawah Tabel) */
         .action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 35px;
-            padding-top: 25px;
-            border-top: 2px solid #E2E8F0;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 35px; padding-top: 25px; border-top: 2px solid #E2E8F0;
         }
 
         .signature-footer { color: #64748B; font-size: 13px; font-weight: 500; }
         .gemini-tag { font-weight: 700; background: linear-gradient(90deg, #4285F4, #9B72CB); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
         .btn-download { 
-            background: var(--pos-orange); 
-            color: white; 
-            border: none; 
-            padding: 15px 35px; 
-            font-size: 15px; 
-            font-weight: 700; 
-            font-family: 'Sora', sans-serif; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(239, 65, 35, 0.25);
+            background: var(--pos-orange); color: white; border: none; 
+            padding: 15px 35px; font-size: 15px; font-weight: 700; 
+            font-family: 'Sora', sans-serif; border-radius: 12px; 
+            cursor: pointer; display: flex; align-items: center; gap: 10px; 
+            transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(239, 65, 35, 0.25);
         }
         .btn-download:hover {
-            background: #d13215;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(239, 65, 35, 0.35);
+            background: #d13215; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 65, 35, 0.35);
         }
 
-        /* DASHBOARD FOOTER (UNIVERSAL & MUTLAK 1 BARIS) */
         .dashboard-footer {
-            width: 100%;
-            box-sizing: border-box;
-            background-color: #0f172a;
-            border-top: 3px solid #EF4123;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 24px;
-            margin-top: auto;
-            font-family: 'Gantari', 'Segoe UI', sans-serif;
-            z-index: 20;
-            height: 60px; /* Mengunci tinggi agar mutlak 1 baris */
-            overflow: hidden;
+            width: 100%; box-sizing: border-box; background-color: #0f172a;
+            border-top: 3px solid #EF4123; display: flex; justify-content: space-between;
+            align-items: center; padding: 0 24px; margin-top: auto;
+            font-family: 'Gantari', 'Segoe UI', sans-serif; z-index: 20;
+            height: 60px; overflow: hidden;
         }
         .footer-brand {
-            display: flex; align-items: center; gap: 8px;
-            color: #f8fafc; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.5px;
-            white-space: nowrap; font-family: 'Sora', sans-serif;
+            display: flex; align-items: center; gap: 8px; color: #f8fafc; font-weight: 700; 
+            font-size: 0.95rem; letter-spacing: 0.5px; white-space: nowrap; font-family: 'Sora', sans-serif;
         }
         .footer-desc { 
-            color: #94a3b8; font-size: 0.8rem; margin: 0 15px; 
-            white-space: nowrap; /* Mencegah teks turun ke baris kedua */
-            overflow: hidden; text-overflow: ellipsis;
-            text-align: center; flex: 1;
+            color: #94a3b8; font-size: 0.8rem; margin: 0 15px; white-space: nowrap; 
+            overflow: hidden; text-overflow: ellipsis; text-align: center; flex: 1;
         }
         .footer-creator-badge {
             display: inline-flex; align-items: center; gap: 6px;
@@ -199,12 +220,8 @@
         }
         .footer-creator-badge strong { color: #EF4123; font-weight: 600; }
 
-        /* Responsif Mobile */
         @media (max-width: 850px) {
-            .dashboard-footer { 
-                flex-direction: column; justify-content: center; gap: 8px; 
-                padding: 15px; height: auto; 
-            }
+            .dashboard-footer { flex-direction: column; justify-content: center; gap: 8px; padding: 15px; height: auto; }
             .footer-desc { display: none; }
         }
     </style>
@@ -220,6 +237,19 @@
     <div class="hero-section">
         <h1>Bulk Tariff Template</h1>
         <p style="color:#64748B; font-size:14px; font-weight: 500;">Website untuk membantu create file xlsx Tarif Negotiable Pos Indonesia</p>
+    </div>
+
+    <div class="drag-drop-area" id="drop_zone">
+        <p id="drop_text">
+            <i class="fas fa-file-upload" style="font-size: 24px; display: block; margin-bottom: 10px; color: var(--pos-blue);"></i> 
+            Drag & Drop file Excel/CSV Tarif di sini atau klik untuk upload
+        </p>
+        <input type="file" id="file_input" accept=".xlsx, .xls, .csv" style="display:none;">
+        <div id="file_info">
+            <i class="fas fa-file-excel" style="color: #107C41; font-size: 20px;"></i>
+            <span id="file_name"></span>
+            <button id="btn_delete_file" onclick="removeFile(event)"><i class="fas fa-times"></i> Hapus File</button>
+        </div>
     </div>
 
     <div class="global-card">
@@ -269,7 +299,7 @@
                     <td>
                         <div class="mobile-label">Layanan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">SLA otomatis menyesuaikan.</span></div></div>
                         <select class="row-input service-id">
-                            <option value="420">PKH (420)</option>
+                            <option value="420" selected>PKH (420)</option>
                             <option value="411">POS EXPRESS (411)</option>
                             <option value="452">PJB (452)</option>
                             <option value="481">KBM (481)</option>
@@ -293,7 +323,6 @@
         <button type="button" class="btn-add" onclick="addRow()"><i class="fas fa-plus-circle"></i> Tambah Baris Pengiriman</button>
     </div>
     
-    <!-- Action Bar (Sejajar dan Rapi) -->
     <div class="action-bar">
         <div class="signature-footer">
             <p>Solusi Digital untuk Efisiensi Operasional Pos Indonesia</p>
@@ -304,20 +333,184 @@
         </button>
     </div>
     
-</div> <!-- Penutup Wrapper Utama -->
+</div> 
 
 <script>
+    // FUNGSI UNTUK MEMBUAT BARIS HTML SECARA DINAMIS
+    function createRowHtml(asal = '', tujuan = '', tarif = '', layanan = '') {
+        return `
+            <td>
+                <div class="mobile-label">Asal <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos asal.</span></div></div>
+                <input type="text" class="row-input from-code" placeholder="Kode Pos" value="${asal}">
+            </td>
+            <td>
+                <div class="mobile-label">Tujuan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">5 digit kode pos tujuan.</span></div></div>
+                <input type="text" class="row-input to-code" placeholder="Kode Pos" value="${tujuan}">
+            </td>
+            <td>
+                <div class="mobile-label">Layanan <div class="tooltip" tabindex="0"><i class="fas fa-question-circle"></i><span class="tooltiptext">SLA otomatis menyesuaikan.</span></div></div>
+                <select class="row-input service-id">
+                    <option value="420" selected>PKH (420)</option>
+                    <option value="411">POS EXPRESS (411)</option>
+                    <option value="452">PJB (452)</option>
+                    <option value="481">KBM (481)</option>
+                    <option value="408">Q9 (408)</option>
+                    <option value="453">PJM (453)</option>
+                    <option value="470">KRT (470)</option>
+                    <option value="446">EC3 (446)</option>
+                </select>
+            </td>
+            <td><div class="mobile-label">Min (G)</div><input type="number" class="row-input min-gram" value="1000"></td>
+            <td><div class="mobile-label">Tarif Min</div><input type="number" class="row-input base-1" placeholder="Harga" value="${tarif}"></td>
+            <td><div class="mobile-label">Klip (G)</div><input type="number" class="row-input klip-gram" value="1000"></td>
+            <td><div class="mobile-label">Tarif Klip</div><input type="number" class="row-input base-2" placeholder="Harga" value="${tarif}"></td>
+            <td><div class="mobile-label">Deskripsi</div><input type="text" class="row-input desc" placeholder="Keterangan" value="${layanan}"></td>
+            <td class="btn-delete-container">
+                <button type="button" onclick="deleteRow(this)" style="border:none; background:none; color:#94A3B8; cursor:pointer;"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+    }
+
     function addRow() {
         const tbody = document.getElementById('tableBody');
-        const firstRow = tbody.querySelector('tr');
-        const newRow = firstRow.cloneNode(true);
-        newRow.querySelectorAll('input').forEach(input => {
-            if(!input.classList.contains('min-gram') && !input.classList.contains('klip-gram')) input.value = '';
-        });
-        tbody.appendChild(newRow);
+        const tr = document.createElement('tr');
+        tr.innerHTML = createRowHtml();
+        tbody.appendChild(tr);
     }
-    function deleteRow(btn) { if (document.querySelectorAll('#tableBody tr').length > 1) btn.closest('tr').remove(); }
     
+    function deleteRow(btn) { 
+        if (document.querySelectorAll('#tableBody tr').length > 1) {
+            btn.closest('tr').remove(); 
+        }
+    }
+
+    // --- LOGIKA DRAG AND DROP & UPLOAD FILE ---
+    const dropZone = document.getElementById('drop_zone');
+    const fileInput = document.getElementById('file_input');
+
+    dropZone.addEventListener('click', (e) => {
+        if(e.target.closest('#btn_delete_file')) return; // Mencegah terpicu saat menekan hapus
+        fileInput.click();
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            fileInput.files = e.dataTransfer.files;
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', function() {
+        if (this.files.length) {
+            handleFile(this.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        document.getElementById('drop_text').style.display = 'none';
+        document.getElementById('file_info').style.display = 'inline-flex';
+        document.getElementById('file_name').textContent = file.name;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            // Mengambil semua data ke dalam format Array of Arrays
+            const rawRows = XLSX.utils.sheet_to_json(firstSheet, {header: 1, defval: ""});
+            
+            // Mencari di mana baris header/judul berada
+            let headerIdx = -1;
+            for (let i = 0; i < rawRows.length; i++) {
+                if (rawRows[i].includes("RUTE KANTOR") && rawRows[i].includes("TARIF") && rawRows[i].includes("Layanan")) {
+                    headerIdx = i;
+                    break;
+                }
+            }
+
+            if (headerIdx === -1) {
+                alert("Format file tidak sesuai. Kolom 'RUTE KANTOR', 'TARIF', dan 'Layanan' tidak ditemukan.");
+                removeFile(); // Batalkan file
+                return;
+            }
+
+            const headers = rawRows[headerIdx];
+            const ruteIdx = headers.indexOf("RUTE KANTOR");
+            const tarifIdx = headers.indexOf("TARIF");
+            const layananIdx = headers.indexOf("Layanan");
+
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = ''; // Hapus seluruh inputan lama
+            
+            let addedCount = 0;
+            const seenRoutes = new Set(); // Logika Deduplikasi untuk memfilter duplikat RUTE KANTOR
+
+            // Looping data mulai dari baris tepat setelah header
+            for (let i = headerIdx + 1; i < rawRows.length; i++) {
+                const row = rawRows[i];
+                if (!row || row.length === 0 || !row[ruteIdx]) continue; // Lewati jika kosong
+
+                const rute = row[ruteIdx].toString().trim();
+                
+                // Cek apakah rute ini sudah pernah diproses sebelumnya
+                if (seenRoutes.has(rute)) {
+                    continue; // Skip baris ini untuk mencegah duplikasi
+                }
+                seenRoutes.add(rute); // Catat rute ini sebagai sudah diproses
+
+                const tarif = row[tarifIdx] || '';
+                const layanan = row[layananIdx] || '';
+
+                let asal = "", tujuan = "";
+                // Pecah RUTE KANTOR menggunakan pipiline |
+                if (rute.includes("|")) {
+                    const parts = rute.split("|");
+                    asal = parts[0];
+                    tujuan = parts[1];
+                } else {
+                    asal = rute;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = createRowHtml(asal, tujuan, tarif, layanan);
+                tbody.appendChild(tr);
+                addedCount++;
+            }
+            
+            if (addedCount === 0) {
+                addRow(); // Pastikan ada minimal 1 baris bila tak ada isinya
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // Fungsi untuk Hapus File dan Mereset Tabel
+    function removeFile(event) {
+        if (event) event.stopPropagation(); // Stop trigger event click upload 
+        document.getElementById('file_input').value = '';
+        document.getElementById('file_info').style.display = 'none';
+        document.getElementById('drop_text').style.display = 'block';
+        
+        // Reset tabel kembali ke 1 baris awal
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        addRow();
+    }
+    
+    // EXCEL EXPORT LOGIC
     function exportExcel() {
         const sfRaw = document.getElementById('global_salesforce').value;
         const sfNum = Number(sfRaw.replace(/[^0-9]/g, ''));
