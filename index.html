@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Negotiable Tariff Builder for MILE | PosNew Hub</title>
-  <meta name="description" content="Import, review, validate, and export negotiable PosIND tariff routes into a MILE-ready Excel workbook directly in your browser.">
+  <title>Pembuat Tarif Negotiable MILE | PosNew Hub</title>
+  <meta name="description" content="Impor, tinjau, validasi, dan ekspor rute tarif negotiable PosIND menjadi workbook Excel siap MILE langsung dari browser.">
   <meta name="author" content="Ikhsan Radiansyah">
   <meta name="theme-color" content="#172554">
   <meta name="color-scheme" content="light">
@@ -16,55 +16,56 @@
   <link rel="manifest" href="/site.webmanifest">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PosNew Hub">
-  <meta property="og:title" content="Negotiable Tariff Builder for MILE | PosNew Hub">
-  <meta property="og:description" content="Prepare validated negotiable tariff workbooks for PosIND MILE in a private browser workspace.">
+  <meta property="og:title" content="Pembuat Tarif Negotiable MILE | PosNew Hub">
+  <meta property="og:description" content="Siapkan workbook tarif negotiable PosIND MILE yang tervalidasi secara aman langsung di browser.">
   <meta property="og:url" content="https://tarif.posnew.com/">
   <meta property="og:image" content="https://tarif.posnew.com/og-cover.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Negotiable Tariff Builder for MILE | PosNew Hub">
-  <meta name="twitter:description" content="Import, validate, and export MILE-ready negotiable tariff workbooks locally in your browser.">
+  <meta name="twitter:title" content="Pembuat Tarif Negotiable MILE | PosNew Hub">
+  <meta name="twitter:description" content="Impor, validasi, dan ekspor workbook tarif negotiable siap MILE langsung di browser.">
   <meta name="twitter:image" content="https://tarif.posnew.com/og-cover.png">
   <link rel="preconnect" href="https://cdn.sheetjs.com" crossorigin>
-  <link rel="stylesheet" href="/assets/css/app.css?v=20260728-1">
+  <link rel="stylesheet" href="/assets/css/app.css?v=20260814-200">
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
     "@type":"SoftwareApplication",
-    "name":"Negotiable Tariff Builder",
+    "name":"Pembuat Tarif Negotiable MILE",
     "applicationCategory":"BusinessApplication",
     "operatingSystem":"Web",
     "url":"https://tarif.posnew.com/",
-    "description":"Browser-based utility for importing, reviewing, validating, and exporting negotiable PosIND tariff routes into a MILE-ready Excel workbook.",
+    "description":"Aplikasi browser untuk mengimpor, meninjau, memvalidasi, dan mengekspor rute tarif negotiable PosIND menjadi workbook Excel siap MILE.",
+    "softwareVersion":"2.0.0",
     "author":{"@type":"Person","name":"Ikhsan Radiansyah","url":"https://posnew.com/about-me.html"},
     "offers":{"@type":"Offer","price":"0","priceCurrency":"IDR"}
   }
   </script>
 </head>
 <body>
-  <a class="skip-link" href="#workspace">Skip to tariff workspace</a>
+  <a class="skip-link" href="#workspace">Lewati ke ruang kerja tarif</a>
 
   <header class="app-header">
     <div class="header-inner">
-      <a class="brand" href="https://posnew.com/" aria-label="Open PosNew Hub">
+      <a class="brand" href="https://posnew.com/" aria-label="Buka PosNew Hub">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24"><path d="M4 7.4 12 3l8 4.4v9.2L12 21l-8-4.4V7.4Z"/><path d="m4.5 7.6 7.5 4.2 7.5-4.2M12 12v8.2"/></svg>
         </span>
-        <span class="brand-copy"><strong>Negotiable Tariff Builder</strong><small>MILE Tariff Workspace</small></span>
+        <span class="brand-copy"><strong>Pembuat Tarif Negotiable</strong><small>Ruang Kerja Tarif MILE</small></span>
       </a>
       <div class="header-actions">
-        <span class="privacy-pill" title="Files stay in this browser session">
+        <span class="privacy-pill" title="File hanya diproses dalam sesi browser ini">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.7 2.8 8.2 7 10 4.2-1.8 7-5.3 7-10V6l-7-3Z"/><path d="m9.2 12 1.8 1.8 3.8-4"/></svg>
-          Local processing
+          Diproses lokal
         </span>
         <button class="header-help" id="helpButton" type="button" aria-haspopup="dialog">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 1 1 3.9 1.9c-1 .7-1.7 1.1-1.7 2.6M12 17h.01"/></svg>
-          <span>Help</span>
+          <span>Bantuan</span>
         </button>
         <a class="all-tools-link" href="https://posnew.com/">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-          All Tools
+          Semua Alat
         </a>
       </div>
     </div>
@@ -73,53 +74,53 @@
   <main id="workspace" class="app-main">
     <section class="intro-shell" aria-labelledby="pageTitle">
       <div class="intro-copy">
-        <span class="eyebrow">MILE tariff preparation</span>
-        <h1 id="pageTitle">Build validated negotiable tariff workbooks with confidence.</h1>
-        <p>Import tariff routes from Excel or CSV, review the pricing structure, complete the customer information, and export a MILE-ready workbook.</p>
-        <p class="independent-note">Independent utility. Your tariff data is processed locally in this browser and is not uploaded to our server.</p>
+        <span class="eyebrow">Penyusunan tarif MILE</span>
+        <h1 id="pageTitle">Buat workbook tarif negotiable yang valid dengan lebih mudah.</h1>
+        <p>Impor rute tarif dari Excel atau CSV, tinjau struktur harga, lengkapi data pelanggan dan SLA, lalu ekspor workbook siap MILE.</p>
+        <p class="independent-note">Aplikasi independen. Data tarif diproses secara lokal di browser ini dan tidak diunggah ke server kami.</p>
       </div>
-      <div class="workflow-steps" aria-label="Tariff workflow">
-        <div class="workflow-step is-active" data-step="1"><span>1</span><strong>Set Details</strong><small>Customer and dates</small></div>
-        <div class="workflow-step" data-step="2"><span>2</span><strong>Import</strong><small>Excel or CSV</small></div>
-        <div class="workflow-step" data-step="3"><span>3</span><strong>Validate</strong><small>Review every route</small></div>
-        <div class="workflow-step" data-step="4"><span>4</span><strong>Export</strong><small>MILE workbook</small></div>
+      <div class="workflow-steps" aria-label="Alur kerja tarif">
+        <div class="workflow-step is-active" data-step="1"><span>1</span><strong>Isi Data</strong><small>Pelanggan dan tanggal</small></div>
+        <div class="workflow-step" data-step="2"><span>2</span><strong>Impor</strong><small>Excel atau CSV</small></div>
+        <div class="workflow-step" data-step="3"><span>3</span><strong>Validasi</strong><small>Tinjau setiap rute</small></div>
+        <div class="workflow-step" data-step="4"><span>4</span><strong>Ekspor</strong><small>Workbook MILE</small></div>
       </div>
     </section>
 
-    <section class="workspace-grid" aria-label="Negotiable tariff workspace">
-      <aside class="setup-column" aria-label="Customer setup and tariff import">
+    <section class="workspace-grid" aria-label="Ruang kerja tarif negotiable">
+      <aside class="setup-column" aria-label="Data pelanggan dan impor tarif">
         <section class="panel-card setup-card" aria-labelledby="customerSetupTitle">
           <div class="panel-heading panel-heading--status">
             <div>
               <span class="section-index">01</span>
-              <div><h2 id="customerSetupTitle">Customer Details</h2><p>Complete all four fields before export.</p></div>
+              <div><h2 id="customerSetupTitle">Data Pelanggan</h2><p>Lengkapi empat kolom sebelum ekspor.</p></div>
             </div>
-            <span class="completion-badge" id="setupCompletion">Complete 4 required fields</span>
+            <span class="completion-badge" id="setupCompletion">Lengkapi 4 kolom wajib</span>
           </div>
 
           <div class="form-grid form-grid--two">
             <div class="form-group full-width" id="fieldGroupCustomer">
-              <label for="customerId">Customer ID <span>Required</span></label>
-              <input id="customerId" type="text" autocomplete="off" spellcheck="false" placeholder="Example: KESPV01294A" aria-describedby="customerHelp customerError">
-              <span class="field-hint" id="customerHelp">The customer type or account code used in the tariff template.</span>
+              <label for="customerId">ID Pelanggan <span>Wajib</span></label>
+              <input id="customerId" type="text" autocomplete="off" spellcheck="false" placeholder="Contoh: KESPV01294A" aria-describedby="customerHelp customerError">
+              <span class="field-hint" id="customerHelp">Kode jenis pelanggan atau akun yang digunakan pada template tarif.</span>
               <span class="field-error" id="customerError"></span>
             </div>
             <div class="form-group full-width" id="fieldGroupSalesforce">
-              <label for="salesforceNumber">Salesforce Number <span>Required</span></label>
-              <input id="salesforceNumber" type="text" autocomplete="off" spellcheck="false" inputmode="text" placeholder="Example: 914372" aria-describedby="salesforceHelp salesforceError">
-              <span class="field-hint" id="salesforceHelp">The product or sub-service identifier used in the exported workbook.</span>
+              <label for="salesforceNumber">Nomor Salesforce <span>Wajib</span></label>
+              <input id="salesforceNumber" type="text" autocomplete="off" spellcheck="false" inputmode="text" placeholder="Contoh: 914372" aria-describedby="salesforceHelp salesforceError">
+              <span class="field-hint" id="salesforceHelp">ID produk atau sublayanan yang digunakan pada workbook hasil ekspor.</span>
               <span class="field-error" id="salesforceError"></span>
             </div>
             <div class="form-group" id="fieldGroupStart">
-              <label for="startDate">Effective Start Date <span>Required</span></label>
+              <label for="startDate">Tanggal Mulai Berlaku <span>Wajib</span></label>
               <input id="startDate" type="date" aria-describedby="startHelp startError">
-              <span class="field-hint" id="startHelp">The first date on which the negotiable tariff becomes active.</span>
+              <span class="field-hint" id="startHelp">Tanggal pertama tarif negotiable mulai aktif.</span>
               <span class="field-error" id="startError"></span>
             </div>
             <div class="form-group" id="fieldGroupEnd">
-              <label for="endDate">Effective End Date <span>Required</span></label>
+              <label for="endDate">Tanggal Akhir Berlaku <span>Wajib</span></label>
               <input id="endDate" type="date" aria-describedby="endHelp endError">
-              <span class="field-hint" id="endHelp">The final date on which the negotiable tariff remains active.</span>
+              <span class="field-hint" id="endHelp">Tanggal terakhir masa aktif tarif negotiable.</span>
               <span class="field-error" id="endError"></span>
             </div>
           </div>
@@ -127,38 +128,42 @@
 
         <section class="panel-card upload-card" aria-labelledby="importTitle">
           <div class="panel-heading">
-            <div><span class="section-index">02</span><div><h2 id="importTitle">Import Tariff Routes</h2><p>Use the first worksheet from an Excel file or import CSV data.</p></div></div>
+            <div><span class="section-index">02</span><div><h2 id="importTitle">Impor Rute Tarif</h2><p>Gunakan lembar kerja pertama dari Excel atau impor data CSV.</p></div></div>
           </div>
 
           <button class="dropzone-area" id="dropzone" type="button" aria-describedby="uploadHelp">
             <span class="dropzone-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg></span>
-            <span class="dropzone-copy"><strong>Drop a tariff workbook here</strong><small id="uploadHelp">Accepted formats: XLSX, XLS, and CSV.</small></span>
-            <span class="browse-chip">Browse Files</span>
+            <span class="dropzone-copy"><strong>Letakkan workbook tarif di sini</strong><small id="uploadHelp">Format yang didukung: XLSX, XLS, dan CSV.</small></span>
+            <span class="browse-chip">Pilih File</span>
           </button>
           <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" hidden>
 
-          <div class="format-row" aria-hidden="true"><span>Excel</span><span>CSV</span><span>First worksheet</span></div>
+          <div class="format-row" aria-hidden="true"><span>Excel</span><span>CSV</span><span>Lembar pertama</span></div>
+          <div class="template-download">
+            <span>Belum memiliki format impor?</span>
+            <a href="/assets/templates/Contoh_Import_Tarif_Route_v2.0.0.xlsx" download>Unduh contoh Excel</a>
+          </div>
 
           <div class="file-card" id="fileCard" hidden>
             <div class="file-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5M9.5 12.5l5 5m0-5-5 5"/></svg></div>
-            <div class="file-meta"><strong id="selectedFileName">No file selected</strong><span id="selectedFileMeta"></span><small id="selectedFileStatus">Ready to process</small></div>
-            <div class="file-actions"><button type="button" class="text-button" id="replaceFileButton">Replace</button><button type="button" class="text-button text-button--danger" id="removeFileButton">Remove</button></div>
+            <div class="file-meta"><strong id="selectedFileName">Belum ada file dipilih</strong><span id="selectedFileMeta"></span><small id="selectedFileStatus">Siap diproses</small></div>
+            <div class="file-actions"><button type="button" class="text-button" id="replaceFileButton">Ganti</button><button type="button" class="text-button text-button--danger" id="removeFileButton">Hapus</button></div>
           </div>
 
           <div class="progress-box" id="progressBox" hidden role="status" aria-live="polite">
             <span class="spinner" aria-hidden="true"></span>
-            <div><strong id="progressTitle">Reading workbook</strong><small id="progressDetail">Preparing your tariff data…</small></div>
+            <div><strong id="progressTitle">Membaca workbook</strong><small id="progressDetail">Menyiapkan data tarif…</small></div>
           </div>
 
           <div class="inline-message" id="importMessage" hidden role="alert"></div>
 
           <div class="import-summary" id="importSummary" hidden>
-            <div class="summary-heading"><strong>Import Summary</strong><button type="button" class="text-button" id="toggleDuplicatesButton" hidden>View skipped routes</button></div>
+            <div class="summary-heading"><strong>Ringkasan Impor</strong><button type="button" class="text-button" id="toggleDuplicatesButton" hidden>Lihat rute yang dilewati</button></div>
             <div class="import-metrics">
-              <div><span id="sourceRowsMetric">0</span><small>Source rows</small></div>
-              <div><span id="importedMetric">0</span><small>Imported</small></div>
-              <div><span id="duplicatesMetric">0</span><small>Duplicates</small></div>
-              <div><span id="reviewMetric">0</span><small>Needs review</small></div>
+              <div><span id="sourceRowsMetric">0</span><small>Baris sumber</small></div>
+              <div><span id="importedMetric">0</span><small>Diimpor</small></div>
+              <div><span id="duplicatesMetric">0</span><small>Duplikat</small></div>
+              <div><span id="reviewMetric">0</span><small>Perlu ditinjau</small></div>
             </div>
             <p id="importSummaryText"></p>
             <div class="duplicate-list" id="duplicateList" hidden></div>
@@ -167,14 +172,14 @@
 
         <section class="privacy-note">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.7 2.8 8.2 7 10 4.2-1.8 7-5.3 7-10V6l-7-3Z"/><path d="m9.2 12 1.8 1.8 3.8-4"/></svg>
-          <div><strong>Private by design</strong><p>Files are read in your browser session. No tariff routes, customer codes, or negotiated prices are sent to an API.</p></div>
+          <div><strong>Privat sejak awal</strong><p>File dibaca di sesi browser Anda. Rute tarif, kode pelanggan, dan harga negosiasi tidak dikirim ke API.</p></div>
         </section>
 
         <section class="panel-card workspace-actions-card" aria-labelledby="workspaceActionsTitle">
-          <div class="panel-heading panel-heading--compact"><div><span class="section-index">03</span><div><h2 id="workspaceActionsTitle">Workspace Actions</h2><p>Manage the current session without changing the source file.</p></div></div></div>
+          <div class="panel-heading panel-heading--compact"><div><span class="section-index">03</span><div><h2 id="workspaceActionsTitle">Tindakan Ruang Kerja</h2><p>Kelola sesi saat ini tanpa mengubah file sumber.</p></div></div></div>
           <div class="stacked-actions">
-            <button type="button" class="button button--secondary" id="resetRowsButton">Reset Tariff Rows</button>
-            <button type="button" class="button button--danger-ghost" id="clearWorkspaceButton">Clear Workspace</button>
+            <button type="button" class="button button--secondary" id="resetRowsButton">Atur Ulang Baris</button>
+            <button type="button" class="button button--danger-ghost" id="clearWorkspaceButton">Bersihkan Ruang Kerja</button>
           </div>
         </section>
       </aside>
@@ -183,85 +188,86 @@
         <div class="editor-card">
           <div class="editor-heading">
             <div>
-              <span class="eyebrow eyebrow--small">Route editor</span>
-              <h2 id="editorTitle">Review and Validate</h2>
-              <p>Edit imported values before generating the final workbook. Weight values are in grams and tariffs are in Rupiah.</p>
+              <span class="eyebrow eyebrow--small">Editor rute</span>
+              <h2 id="editorTitle">Tinjau dan Validasi</h2>
+              <p>Edit nilai hasil impor sebelum membuat workbook. Berat dalam gram, tarif dalam Rupiah, dan SLA wajib diisi dalam hari.</p>
             </div>
             <div class="editor-heading-actions">
               <button type="button" class="button button--secondary" id="addRowButton">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                Add Tariff Route
+                Tambah Rute Tarif
               </button>
             </div>
           </div>
 
           <div class="validation-strip" id="validationStrip" aria-live="polite">
-            <div class="validation-metric"><span id="totalRoutesCount">1</span><small>Total Routes</small></div>
-            <div class="validation-metric validation-metric--ready"><span id="readyRoutesCount">0</span><small>Ready</small></div>
-            <div class="validation-metric validation-metric--review"><span id="reviewRoutesCount">0</span><small>Needs Review</small></div>
-            <div class="validation-metric validation-metric--invalid"><span id="invalidRoutesCount">1</span><small>Invalid</small></div>
-            <div class="validation-metric"><span id="duplicateRoutesCount">0</span><small>Duplicates</small></div>
-            <p class="validation-sentence" id="validationSentence">Complete the first tariff route to continue.</p>
+            <div class="validation-metric"><span id="totalRoutesCount">1</span><small>Total Rute</small></div>
+            <div class="validation-metric validation-metric--ready"><span id="readyRoutesCount">0</span><small>Siap</small></div>
+            <div class="validation-metric validation-metric--review"><span id="reviewRoutesCount">0</span><small>Perlu Ditinjau</small></div>
+            <div class="validation-metric validation-metric--invalid"><span id="invalidRoutesCount">1</span><small>Tidak Valid</small></div>
+            <div class="validation-metric"><span id="duplicateRoutesCount">0</span><small>Duplikat</small></div>
+            <p class="validation-sentence" id="validationSentence">Lengkapi rute tarif pertama untuk melanjutkan.</p>
           </div>
 
           <div class="editor-toolbar">
             <div class="search-field">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.7-3.7"/></svg>
-              <input id="rowSearch" type="search" placeholder="Search route or description" aria-label="Search tariff routes">
+              <input id="rowSearch" type="search" placeholder="Cari rute atau deskripsi" aria-label="Cari rute tarif">
             </div>
             <div class="toolbar-filters">
-              <label class="sr-only" for="statusFilter">Filter by status</label>
-              <select id="statusFilter"><option value="all">All statuses</option><option value="ready">Ready</option><option value="needs-review">Needs Review</option><option value="invalid">Invalid</option><option value="incomplete">Incomplete</option><option value="critical">Invalid / Incomplete</option></select>
-              <label class="sr-only" for="serviceFilter">Filter by service</label>
-              <select id="serviceFilter"><option value="all">All services</option></select>
-              <button type="button" class="button button--ghost" id="clearFiltersButton">Clear Filters</button>
-              <button type="button" class="button button--ghost" id="showInvalidButton">Show Invalid Rows</button>
+              <label class="sr-only" for="statusFilter">Filter berdasarkan status</label>
+              <select id="statusFilter"><option value="all">Semua status</option><option value="ready">Siap</option><option value="needs-review">Perlu Ditinjau</option><option value="invalid">Tidak Valid</option><option value="incomplete">Belum Lengkap</option><option value="critical">Tidak Valid / Belum Lengkap</option></select>
+              <label class="sr-only" for="serviceFilter">Filter berdasarkan layanan</label>
+              <select id="serviceFilter"><option value="all">Semua layanan</option></select>
+              <button type="button" class="button button--ghost" id="clearFiltersButton">Hapus Filter</button>
+              <button type="button" class="button button--ghost" id="showInvalidButton">Tampilkan Baris Bermasalah</button>
             </div>
           </div>
 
           <div class="bulk-toolbar" id="bulkToolbar" hidden>
-            <strong id="selectedRowsText">0 rows selected</strong>
-            <div><button type="button" class="text-button" id="duplicateSelectedButton">Duplicate Selected</button><button type="button" class="text-button text-button--danger" id="deleteSelectedButton">Delete Selected</button></div>
+            <strong id="selectedRowsText">0 baris dipilih</strong>
+            <div><button type="button" class="text-button" id="duplicateSelectedButton">Duplikat Terpilih</button><button type="button" class="text-button text-button--danger" id="deleteSelectedButton">Hapus Terpilih</button></div>
           </div>
 
           <div class="table-shell" id="tableShell">
             <table class="tariff-table" id="tariffTable">
               <thead>
                 <tr>
-                  <th class="select-column"><input type="checkbox" id="selectAllRows" aria-label="Select all visible rows"></th>
+                  <th class="select-column"><input type="checkbox" id="selectAllRows" aria-label="Pilih semua baris yang terlihat"></th>
                   <th class="number-column">#</th>
                   <th>Status</th>
-                  <th>Origin</th>
-                  <th>Destination</th>
-                  <th>Service</th>
-                  <th>SLA</th>
-                  <th>Minimum Weight</th>
-                  <th>Minimum Tariff</th>
-                  <th>Increment Weight</th>
-                  <th>Increment Tariff</th>
-                  <th>Description</th>
-                  <th>Actions</th>
+                  <th>Asal</th>
+                  <th>Tujuan</th>
+                  <th>Layanan</th>
+                  <th>Formula ID</th>
+                  <th>SLA (hari)</th>
+                  <th>Berat Minimum</th>
+                  <th>Tarif Minimum</th>
+                  <th>Berat Kelipatan</th>
+                  <th>Tarif Kelipatan</th>
+                  <th>Deskripsi</th>
+                  <th>Tindakan</th>
                 </tr>
               </thead>
               <tbody id="tariffTableBody"></tbody>
             </table>
             <div class="empty-state" id="emptyState" hidden>
               <span class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></span>
-              <strong>No tariff routes match the current filters.</strong>
-              <p>Clear the filters or add a new tariff route.</p>
+              <strong>Tidak ada rute tarif yang cocok dengan filter.</strong>
+              <p>Hapus filter atau tambahkan rute tarif baru.</p>
             </div>
           </div>
 
           <details class="export-preview" id="exportPreview">
             <summary>
-              <span><strong>Export Preview</strong><small>Inspect the exact operational values that will be written to the workbook.</small></span>
-              <span class="preview-count" id="previewCount">0 ready rows</span>
+              <span><strong>Pratinjau Ekspor</strong><small>Periksa nilai operasional yang akan ditulis ke workbook.</small></span>
+              <span class="preview-count" id="previewCount">0 baris siap</span>
             </summary>
             <div class="preview-body">
               <div class="preview-grid" id="previewGrid"></div>
               <div class="preview-table-wrap">
                 <table class="preview-table">
-                  <thead><tr><th>Origin</th><th>Destination</th><th>Service</th><th>SLA</th><th>Formula ID</th><th>Formula JSON</th><th>Customer</th><th>Sub-service</th><th>Description</th></tr></thead>
+                  <thead><tr><th>Asal</th><th>Tujuan</th><th>Layanan</th><th>SLA</th><th>Formula ID</th><th>Formula JSON</th><th>Pelanggan</th><th>Sublayanan</th><th>Deskripsi</th></tr></thead>
                   <tbody id="previewTableBody"></tbody>
                 </table>
               </div>
@@ -270,14 +276,14 @@
 
           <div class="export-bar">
             <div class="export-summary-copy">
-              <strong id="exportHeadline">Complete the customer setup and validate the tariff routes before exporting.</strong>
-              <span id="exportFilename">Output file: Tarif_Negotiable_&lt;Salesforce Number&gt;.xlsx</span>
+              <strong id="exportHeadline">Lengkapi data pelanggan, SLA, dan validasi rute sebelum ekspor.</strong>
+              <span id="exportFilename">File keluaran: Tarif_Negotiable_&lt;Nomor Salesforce&gt;.xlsx</span>
             </div>
             <button type="button" class="button button--primary" id="exportButton" disabled>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 19h14"/></svg>
-              Export MILE Tariff Workbook
+              Ekspor Workbook Tarif MILE
             </button>
-            <button type="button" class="button button--secondary" id="downloadAgainButton" hidden>Download Again</button>
+            <button type="button" class="button button--secondary" id="downloadAgainButton" hidden>Unduh Lagi</button>
           </div>
         </div>
       </section>
@@ -289,51 +295,51 @@
 
   <dialog class="app-dialog" id="helpDialog" aria-labelledby="helpDialogTitle">
     <form method="dialog">
-      <div class="dialog-heading"><span class="dialog-icon" aria-hidden="true">?</span><div><h2 id="helpDialogTitle">How to prepare a tariff workbook</h2><p>Follow the four-stage workflow without leaving this page.</p></div></div>
+      <div class="dialog-heading"><span class="dialog-icon" aria-hidden="true">?</span><div><h2 id="helpDialogTitle">Cara menyiapkan workbook tarif</h2><p>Ikuti empat tahap berikut tanpa meninggalkan halaman ini.</p></div></div>
       <ol class="help-list">
-        <li><strong>Set Customer Details</strong><span>Enter the customer ID, Salesforce number, and effective period.</span></li>
-        <li><strong>Import Tariff Routes</strong><span>Use XLSX, XLS, or CSV with RUTE KANTOR, TARIF, and Layanan headers.</span></li>
-        <li><strong>Review and Validate</strong><span>Resolve incomplete, invalid, and duplicate route-service combinations.</span></li>
-        <li><strong>Export Workbook</strong><span>Confirm the summary and download the TariffCustomer worksheet.</span></li>
+        <li><strong>Isi Data Pelanggan</strong><span>Masukkan ID Pelanggan, Nomor Salesforce, dan periode berlaku.</span></li>
+        <li><strong>Impor Rute Tarif</strong><span>Gunakan XLSX, XLS, atau CSV dengan header RUTE KANTOR, TARIF, dan Layanan. Contoh Excel tersedia di panel impor.</span></li>
+        <li><strong>Tinjau dan Validasi</strong><span>Pilih layanan, periksa Formula ID, isi SLA hari, dan selesaikan data tidak lengkap atau duplikat.</span></li>
+        <li><strong>Ekspor Workbook</strong><span>Konfirmasi ringkasan lalu unduh lembar kerja TariffCustomer.</span></li>
       </ol>
-      <div class="dialog-note"><strong>Route format</strong><span>Use ORIGIN|DESTINATION, for example 29400|10110.</span></div>
-      <div class="dialog-actions"><button class="button button--primary" value="close">Got It</button></div>
+      <div class="dialog-note"><strong>Format rute</strong><span>Gunakan ASAL|TUJUAN, contoh 29400|10110.</span></div>
+      <div class="dialog-actions"><button class="button button--primary" value="close">Mengerti</button></div>
     </form>
   </dialog>
 
   <dialog class="app-dialog" id="confirmDialog" aria-labelledby="confirmDialogTitle">
     <form method="dialog">
-      <div class="dialog-heading"><span class="dialog-icon dialog-icon--warning" aria-hidden="true">!</span><div><h2 id="confirmDialogTitle">Confirm action</h2><p id="confirmDialogText">This action cannot be undone.</p></div></div>
-      <div class="dialog-actions"><button class="button button--ghost" value="cancel">Cancel</button><button class="button button--danger" id="confirmDialogAction" value="confirm">Continue</button></div>
+      <div class="dialog-heading"><span class="dialog-icon dialog-icon--warning" aria-hidden="true">!</span><div><h2 id="confirmDialogTitle">Konfirmasi tindakan</h2><p id="confirmDialogText">Tindakan ini tidak dapat dibatalkan.</p></div></div>
+      <div class="dialog-actions"><button class="button button--ghost" value="cancel">Batal</button><button class="button button--danger" id="confirmDialogAction" value="confirm">Lanjutkan</button></div>
     </form>
   </dialog>
 
   <dialog class="app-dialog app-dialog--wide" id="exportDialog" aria-labelledby="exportDialogTitle">
     <form method="dialog">
-      <div class="dialog-heading"><span class="dialog-icon dialog-icon--success" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/></svg></span><div><h2 id="exportDialogTitle">Confirm workbook export</h2><p>Review the final summary before downloading.</p></div></div>
+      <div class="dialog-heading"><span class="dialog-icon dialog-icon--success" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m7 12 3 3 7-7"/></svg></span><div><h2 id="exportDialogTitle">Konfirmasi ekspor workbook</h2><p>Tinjau ringkasan akhir sebelum mengunduh.</p></div></div>
       <div class="export-confirm-grid" id="exportConfirmGrid"></div>
-      <div class="dialog-actions"><button class="button button--ghost" value="cancel">Cancel</button><button class="button button--primary" id="confirmExportButton" value="confirm">Generate and Download</button></div>
+      <div class="dialog-actions"><button class="button button--ghost" value="cancel">Batal</button><button class="button button--primary" id="confirmExportButton" value="confirm">Buat dan Unduh</button></div>
     </form>
   </dialog>
 
   <footer class="dashboard-footer">
-    <a class="footer-brand" href="https://posnew.com/" aria-label="Open PosNew Hub">
+    <a class="footer-brand" href="https://posnew.com/" aria-label="Buka PosNew Hub">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4.5 7.5 7.5 4.2 7.5-4.2M12 12v8.2"/></svg>
       PosNew Hub
     </a>
-    <p class="footer-desc">A faster workspace for preparing validated MILE negotiable tariff data.</p>
+    <p class="footer-desc"><span class="footer-desc-text">Ruang kerja yang lebih cepat untuk menyiapkan data tarif negotiable MILE.</span><span class="footer-version" id="appVersion">Versi 2.0.0</span></p>
     <a class="footer-creator-badge" href="https://posnew.com/about-me.html">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 9-3 3 3 3M16 9l3 3-3 3M14 5l-4 14"/></svg>
-      Created by <strong>Ikhsan Radiansyah</strong> · 2026
+      Dibuat oleh <strong>Ikhsan Radiansyah</strong> · 2026
     </a>
   </footer>
 
-  <noscript><div class="noscript-message">JavaScript must be enabled to use the Negotiable Tariff Builder.</div></noscript>
+  <noscript><div class="noscript-message">JavaScript harus diaktifkan untuk menggunakan Pembuat Tarif Negotiable.</div></noscript>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
-  <script src="/assets/js/constants.js?v=20260728-1" defer></script>
-  <script src="/assets/js/importer.js?v=20260728-1" defer></script>
-  <script src="/assets/js/validation.js?v=20260728-1" defer></script>
-  <script src="/assets/js/export.js?v=20260728-1" defer></script>
-  <script src="/assets/js/app.js?v=20260728-1" defer></script>
+  <script src="/assets/js/constants.js?v=20260814-200" defer></script>
+  <script src="/assets/js/importer.js?v=20260814-200" defer></script>
+  <script src="/assets/js/validation.js?v=20260814-200" defer></script>
+  <script src="/assets/js/export.js?v=20260814-200" defer></script>
+  <script src="/assets/js/app.js?v=20260814-200" defer></script>
 </body>
 </html>
