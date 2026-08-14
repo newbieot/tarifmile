@@ -19,13 +19,13 @@
   }
 
   function validateSourceFile(file) {
-    if (!file) return { valid: false, message: 'Choose an XLSX, XLS, or CSV file.' };
+    if (!file) return { valid: false, message: 'Pilih file XLSX, XLS, atau CSV.' };
     const extension = getExtension(file.name);
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      return { valid: false, message: 'Unsupported file type. Choose an XLSX, XLS, or CSV file.' };
+      return { valid: false, message: 'Jenis file tidak didukung. Pilih file XLSX, XLS, atau CSV.' };
     }
     if (Number(file.size) === 0) {
-      return { valid: false, message: 'The selected file is empty.' };
+      return { valid: false, message: 'File yang dipilih kosong.' };
     }
     return { valid: true, extension };
   }
@@ -91,7 +91,7 @@
   function parseRoute(routeValue) {
     const raw = String(routeValue ?? '').trim();
     if (!raw) {
-      return { origin: '', destination: '', needsReview: true, message: 'Route is empty.', raw };
+      return { origin: '', destination: '', needsReview: true, message: 'Rute kosong.', raw };
     }
 
     if (!raw.includes('|')) {
@@ -99,7 +99,7 @@
         origin: raw,
         destination: '',
         needsReview: true,
-        message: 'Destination is missing because the imported route did not contain |.',
+        message: 'Tujuan tidak ditemukan karena rute impor tidak memuat tanda |.',
         raw
       };
     }
@@ -108,9 +108,9 @@
     const origin = String(parts[0] ?? '').trim();
     const destination = String(parts[1] ?? '').trim();
     const messages = [];
-    if (!origin) messages.push('Origin is empty.');
-    if (!destination) messages.push('Destination is empty.');
-    if (parts.length > 2) messages.push('The route contains more than one | separator.');
+    if (!origin) messages.push('Asal kosong.');
+    if (!destination) messages.push('Tujuan kosong.');
+    if (parts.length > 2) messages.push('Rute memuat lebih dari satu tanda pemisah |.');
 
     return {
       origin,
@@ -129,7 +129,7 @@
   function parseSourceRows(rawRows) {
     const header = findHeaderRow(rawRows);
     if (!header.found) {
-      const error = new Error('We could not find the required RUTE KANTOR, TARIF, and Layanan columns.');
+      const error = new Error('Kolom wajib RUTE KANTOR, TARIF, dan Layanan tidak ditemukan.');
       error.code = 'MISSING_HEADERS';
       throw error;
     }
@@ -175,10 +175,10 @@
       const reviewMessages = [];
       if (route.needsReview && route.message) reviewMessages.push(route.message);
       if (tariff === '') {
-        reviewMessages.push('The imported tariff value could not be read as a number.');
+        reviewMessages.push('Nilai tarif impor tidak dapat dibaca sebagai angka.');
         summary.invalidTariffRows += 1;
       }
-      if (!serviceDescription) reviewMessages.push('The imported service description is empty.');
+      if (!serviceDescription) reviewMessages.push('Deskripsi layanan pada data impor kosong.');
 
       const row = namespace.createDefaultRow({
         origin: route.origin,
@@ -197,7 +197,7 @@
     }
 
     if (rows.length === 0) {
-      const error = new Error('No valid tariff routes were found in the selected worksheet.');
+      const error = new Error('Tidak ada rute tarif yang valid pada lembar kerja yang dipilih.');
       error.code = 'NO_VALID_ROUTES';
       error.summary = summary;
       throw error;
@@ -214,19 +214,19 @@
       throw error;
     }
     if (!root.XLSX || !root.XLSX.read || !root.XLSX.utils) {
-      const error = new Error('SheetJS could not be loaded. Check your internet connection and reload the page.');
+      const error = new Error('SheetJS tidak dapat dimuat. Periksa koneksi internet lalu muat ulang halaman.');
       error.code = 'SHEETJS_UNAVAILABLE';
       throw error;
     }
 
     const progress = typeof onProgress === 'function' ? onProgress : function () {};
-    progress('Reading workbook', 'Loading the selected file into memory…');
+    progress('Membaca workbook', 'Memuat file yang dipilih ke memori…');
 
     let buffer;
     try {
       buffer = await file.arrayBuffer();
     } catch (cause) {
-      const error = new Error('The selected file could not be read by this browser.');
+      const error = new Error('File yang dipilih tidak dapat dibaca oleh browser ini.');
       error.code = 'FILE_READ_FAILED';
       error.cause = cause;
       throw error;
@@ -243,8 +243,8 @@
       });
     } catch (cause) {
       const message = /password|encrypt/i.test(String(cause && cause.message))
-        ? 'Encrypted workbooks are not supported. Remove the password and try again.'
-        : 'The workbook could not be read. Verify that it is a valid XLSX, XLS, or CSV file.';
+        ? 'Workbook terenkripsi tidak didukung. Hapus kata sandi lalu coba lagi.'
+        : 'Workbook tidak dapat dibaca. Pastikan file merupakan XLSX, XLS, atau CSV yang valid.';
       const error = new Error(message);
       error.code = 'WORKBOOK_READ_FAILED';
       error.cause = cause;
@@ -252,7 +252,7 @@
     }
 
     if (!Array.isArray(workbook.SheetNames) || workbook.SheetNames.length === 0) {
-      const error = new Error('The workbook does not contain a readable worksheet.');
+      const error = new Error('Workbook tidak memiliki lembar kerja yang dapat dibaca.');
       error.code = 'EMPTY_WORKBOOK';
       throw error;
     }
@@ -260,12 +260,12 @@
     const firstSheetName = workbook.SheetNames[0];
     const firstSheet = workbook.Sheets[firstSheetName];
     if (!firstSheet || !firstSheet['!ref']) {
-      const error = new Error('The first worksheet is empty.');
+      const error = new Error('Lembar kerja pertama kosong.');
       error.code = 'EMPTY_WORKSHEET';
       throw error;
     }
 
-    progress('Detecting headers', 'Searching the first worksheet for the required columns…');
+    progress('Mendeteksi header', 'Mencari kolom wajib pada lembar kerja pertama…');
     let rawRows;
     try {
       rawRows = root.XLSX.utils.sheet_to_json(firstSheet, {
@@ -275,15 +275,15 @@
         blankrows: true
       });
     } catch (cause) {
-      const error = new Error('The first worksheet could not be converted into tariff rows.');
+      const error = new Error('Lembar kerja pertama tidak dapat dikonversi menjadi baris tarif.');
       error.code = 'WORKSHEET_PARSE_FAILED';
       error.cause = cause;
       throw error;
     }
 
-    progress('Importing tariff routes', 'Splitting origin and destination codes…');
+    progress('Mengimpor rute tarif', 'Memisahkan kode asal dan tujuan…');
     const result = parseSourceRows(rawRows);
-    progress('Removing duplicates', 'Preparing the final editable route list…');
+    progress('Menghapus duplikat', 'Menyiapkan daftar rute yang dapat diedit…');
     return {
       ...result,
       sheetName: firstSheetName,

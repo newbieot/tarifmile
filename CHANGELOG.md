@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-08-14 — Versi 2.0.0
+
+### Ditambahkan
+
+- Pilihan Formula ID otomatis per layanan berdasarkan tabel referensi operasional.
+- Opsi override Formula ID `1644 (PJE)` pada setiap rute.
+- Input SLA wajib per rute; SLA jam dihitung otomatis dari `hari × 24`.
+- Layanan tambahan dan Formula ID: PPB, DG, VG, 3PE, Q23, Q13, 3LX, 3LP, 332, 331, 312, 311, dan 010.
+- Template unduhan `Contoh_Import_Tarif_Route_v2.0.0.xlsx` dengan format dan data contoh yang dapat langsung diimpor.
+- Nomor versi aplikasi yang terlihat pada footer.
+- Middleware Cloudflare Pages untuk redirect host `tarifmile.pages.dev` ke `tarif.posnew.com` tanpa me-redirect domain utama.
+
+### Diubah
+
+- Seluruh UI, pesan validasi, dialog, metadata, manifest, dan halaman 404 menjadi bahasa Indonesia.
+- Berat Minimum default berubah dari `1300` menjadi `1000` gram.
+- Formula ID tidak lagi di-hard-code `1288`; nilai otomatis mengikuti layanan.
+- SLA tidak lagi dikunci `30` hari atau mengikuti layanan.
+- Cache key aset berubah menjadi `20260814-200`; HTML memakai `no-store` agar versi baru segera dimuat.
+
+### Dipertahankan
+
+- Skema keluaran 13 kolom, nama worksheet `TariffCustomer`, pola nama file, Formula JSON, `disableTariff = 0`, dan tipe sel teks/angka.
+- Impor XLSX, XLS, CSV, drag-and-drop, deteksi header, pemisahan rute, dan deduplikasi.
+
 ## 2026-07-28 — Complete redesign
 
 ### Added

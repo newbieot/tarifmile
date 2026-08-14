@@ -1,7 +1,7 @@
 {
-  "name": "Negotiable Tariff Builder",
-  "short_name": "Tariff Builder",
-  "description": "Prepare validated negotiable tariff workbooks for PosIND MILE.",
+  "name": "Pembuat Tarif Negotiable MILE",
+  "short_name": "Tarif MILE",
+  "description": "Siapkan workbook tarif negotiable PosIND MILE yang tervalidasi.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

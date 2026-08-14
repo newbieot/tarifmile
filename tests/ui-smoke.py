@@ -72,8 +72,9 @@ with sync_playwright() as p:
     page.set_content(html, wait_until='load', timeout=60000)
     page.wait_for_selector('#tariffTableBody tr')
 
-    check(page.title() == 'Negotiable Tariff Builder for MILE | PosNew Hub', 'Unexpected page title')
-    check(page.locator('html').get_attribute('lang') == 'en', 'HTML language is not English')
+    check(page.title() == 'Pembuat Tarif Negotiable MILE | PosNew Hub', 'Unexpected page title')
+    check(page.locator('html').get_attribute('lang') == 'id', 'HTML language is not Indonesian')
+    check(page.locator('#appVersion').text_content() == 'Versi 2.0.0', 'Visible application version is missing')
     check(page.locator('#tariffTableBody tr').count() == 1, 'Initial row missing')
     check(page.locator('#exportButton').is_disabled(), 'Export should start disabled')
     check(page.locator('body').evaluate('(el)=>el.scrollWidth <= el.clientWidth'), 'Desktop page has horizontal overflow')
@@ -93,12 +94,19 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('#importedMetric').textContent === '3'")
     check(page.locator('#tariffTableBody tr').count() == 3, 'XLSX import did not create 3 deduplicated routes')
     check(page.locator('#duplicatesMetric').text_content() == '1', 'Duplicate count was not reported')
-    check(page.locator('#exportButton').is_enabled(), 'Valid imported data should enable export')
+    check(page.locator('#exportButton').is_disabled(), 'Import must require an SLA before export')
     check(page.locator('#selectedFileName').text_content() == 'valid-tariff.xlsx', 'Selected filename not shown')
 
+    for sla_input in page.locator('[data-field="slaDays"]').all():
+        sla_input.fill('3')
+    check(page.locator('#exportButton').is_enabled(), 'Valid imported data with SLA should enable export')
+
     first_service = page.locator('#tariffTableBody tr').first.locator('[data-field="serviceId"]')
-    first_service.select_option('411')
-    check('2 days' in page.locator('#tariffTableBody tr').first.locator('.sla-display').text_content(), 'Service 411 SLA did not update')
+    first_service.select_option('452')
+    first_formula = page.locator('#tariffTableBody tr').first.locator('[data-field="formulaIdOverride"]')
+    check('1669' in first_formula.locator('option').first.text_content(), 'Automatic PJB formula mapping did not update')
+    first_formula.select_option('1644')
+    check('72 jam' in page.locator('#tariffTableBody tr').first.locator('.sla-display').text_content(), 'SLA hours were not calculated from user input')
 
     # Remove file reference without deleting reviewed rows.
     page.click('#removeFileButton')
@@ -110,6 +118,7 @@ with sync_playwright() as p:
     last = page.locator('#tariffTableBody tr').last
     last.locator('[data-field="origin"]').fill('50100')
     last.locator('[data-field="destination"]').fill('60100')
+    last.locator('[data-field="slaDays"]').fill('5')
     last.locator('[data-field="minimumTariff"]').fill('17000')
     last.locator('[data-field="incrementTariff"]').fill('17000')
     last.locator('[data-field="description"]').fill('manual tariff')
@@ -141,7 +150,8 @@ with sync_playwright() as p:
     sheet = workbook['Sheets']['TariffCustomer']
     check(sheet['A1']['v'] == 'tariff_from_code' and sheet['M1']['v'] == 'tariff_sub_service_description', 'Output header schema changed')
     check(sheet['A2']['t'] == 's' and sheet['C2']['t'] == 'n', 'Output cell types changed')
-    check(sheet['F2']['v'] == 1288 and sheet['K2']['v'] == 0, 'Formula ID or disableTariff changed')
+    check(sheet['D2']['v'] == 3 and sheet['E2']['v'] == 72, 'User-entered SLA was not exported')
+    check(sheet['F2']['v'] == 1644 and sheet['K2']['v'] == 0, 'Formula override or disableTariff changed')
     check(sheet['L2']['v'] == 'SF-914372-A', 'Raw Salesforce export changed')
     check(sheet['M2']['v'] == 'PKH SPECIAL', 'Uppercase description export changed')
 
@@ -155,12 +165,12 @@ with sync_playwright() as p:
 
     # Error paths.
     page.set_input_files('#fileInput', str(ROOT / 'tests/fixtures/unsupported.txt'))
-    check('Unsupported file type' in page.locator('#importMessage').text_content(), 'Unsupported file error missing')
+    check('Jenis file tidak didukung' in page.locator('#importMessage').text_content(), 'Unsupported file error missing')
     page.set_input_files('#fileInput', str(ROOT / 'tests/fixtures/empty.csv'))
-    check('empty' in page.locator('#importMessage').text_content().lower(), 'Empty file error missing')
+    check('kosong' in page.locator('#importMessage').text_content().lower(), 'Empty file error missing')
     page.set_input_files('#fileInput', str(ROOT / 'tests/fixtures/corrupt.xlsx'))
     page.wait_for_timeout(100)
-    check('could not be read' in page.locator('#importMessage').text_content().lower(), 'Corrupt workbook error missing')
+    check('tidak dapat dibaca' in page.locator('#importMessage').text_content().lower(), 'Corrupt workbook error missing')
 
     # CSV and XLS paths use the same importer workflow and accepted-extension validation.
     for fixture in ['valid-tariff.csv', 'valid-tariff.xls']:

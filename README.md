@@ -1,89 +1,80 @@
-# Negotiable Tariff Builder
+# Pembuat Tarif Negotiable MILE
 
-Negotiable Tariff Builder is a lightweight, browser-based workspace for preparing validated negotiable tariff workbooks for PosIND MILE. It imports route and tariff data, provides an editable validation workspace, and exports a workbook that preserves the operational schema used by the existing application.
+Versi **2.0.0** adalah aplikasi web statis berbahasa Indonesia untuk mengimpor rute tarif, memvalidasi data, dan membuat workbook `TariffCustomer` yang siap digunakan pada MILE.
 
-> This is an independently developed utility. It must not be presented as an official Pos Indonesia application unless written authorization exists.
+> Aplikasi ini dikembangkan secara independen dan tidak boleh dinyatakan sebagai aplikasi resmi Pos Indonesia tanpa otorisasi tertulis.
 
-## Privacy model
+## Privasi
 
-All workbook parsing, editing, validation, and generation happens locally in the browser. The application does not upload tariff data to a server, send it to an API, add analytics, persist tariff rows, place values in URLs, or log full tariff records to the console.
+File diproses secara lokal di browser. Data tarif tidak diunggah ke server, tidak dikirim ke API, dan tidak disimpan oleh aplikasi.
 
-The only runtime dependency is the pinned SheetJS Community Edition browser build. Loading the library does not send the contents of the selected workbook to SheetJS.
+## Format file impor
 
-## Supported source files
-
-- `.xlsx`
-- `.xls`
-- `.csv`
-
-Only the first worksheet is processed. The importer scans the worksheet until it finds a row containing all three required headers:
+Format yang didukung: `.xlsx`, `.xls`, dan `.csv`. Hanya lembar kerja pertama yang dibaca. Importer mencari tiga header berikut pada baris yang sama:
 
 - `RUTE KANTOR`
 - `TARIF`
 - `Layanan`
 
-Header detection ignores harmless capitalization differences, leading/trailing spaces, and duplicate whitespace. It does not guess unrelated column names.
-
-## Route format and duplicate handling
-
-The expected route format is:
+Format rute wajib `ASAL|TUJUAN`, misalnya `29400|10110`. Contoh siap pakai tersedia di:
 
 ```text
-ORIGIN|DESTINATION
+assets/templates/Contoh_Import_Tarif_Route_v2.0.0.xlsx
 ```
 
-Example:
+Nilai `TARIF` hasil impor mengisi Tarif Minimum dan Tarif Kelipatan. Rute duplikat berdasarkan nilai `RUTE KANTOR` dilewati.
 
-```text
-29400|10110
-```
+## Data pelanggan
 
-Origin and destination values remain text so leading zeroes are retained. A route without `|` is placed in the origin field, the destination stays empty, and the row is marked for review.
+Empat nilai global wajib diisi:
 
-Imported rows are deduplicated by the trimmed source `RUTE KANTOR` value. The import summary reports source rows, imported routes, skipped duplicates, skipped empty rows, and rows requiring review. Existing editor rows are not erased unless the new file parses successfully.
+- ID Pelanggan
+- Nomor Salesforce
+- Tanggal Mulai Berlaku
+- Tanggal Akhir Berlaku
 
-## Customer setup
+ID Pelanggan diubah menjadi huruf besar hanya saat ekspor. Nilai Salesforce asli dipertahankan untuk nama file dan `tariff_sub_service_code`; bentuk numeriknya dipakai pada `kdlayanan_pelanggan`.
 
-Four global values are required:
+## Nilai per rute
 
-- Customer ID
-- Salesforce Number
-- Effective Start Date
-- Effective End Date
+- Layanan: default PKH (`420`)
+- Formula ID: otomatis mengikuti layanan
+- Opsi manual Formula ID: `1644` (`PJE`)
+- SLA: wajib diisi pengguna dalam hari bulat lebih dari `0`
+- SLA jam: otomatis dihitung `hari × 24`
+- Berat Minimum: default `1000` gram
+- Berat Kelipatan: default `1000` gram
 
-Customer ID is converted to uppercase only for export. The raw Salesforce value is retained for `tariff_sub_service_code` and the filename. Its numeric-only form is used for `kdlayanan_pelanggan` inside the tariff formula JSON.
+Layanan dan Formula ID otomatis:
 
-## Services and SLA rules
+| Layanan | Service ID | Formula ID |
+|---|---:|---:|
+| PKH | 420 | 1288 |
+| PE | 411 | 1288 |
+| PJE | 428 | 1644 |
+| PJB | 452 | 1669 |
+| KBM | 481 | Tidak tersedia |
+| Q9 | 408 | 1288 |
+| PJM | 453 | 1672 |
+| KRT | 470 | 1701 |
+| EC3 | 446 | 1288 |
+| PPB_SEKOGRAM | 483 | 1711 |
+| PPB_KARTUPOS | 485 | 1711 |
+| PPB_PKT | 477 | 1711 |
+| PPB_SRT | 476 | 1711 |
+| DG | 466 | 1678 |
+| VG | 465 | 1677 |
+| 3PE, Q23, Q13, 3LX, 3LP, 332, 331, 312, 311, 010 | 464–455 | 1648 |
 
-| Service | ID | SLA day | SLA hours |
-|---|---:|---:|---:|
-| PKH | 420 | 30 | 720 |
-| POS EXPRESS | 411 | 2 | 48 |
-| PJE | 428 | 30 | 720 |
-| PJB | 452 | 30 | 720 |
-| KBM | 481 | 30 | 720 |
-| Q9 | 408 | 30 | 720 |
-| PJM | 453 | 30 | 720 |
-| KRT | 470 | 30 | 720 |
-| EC3 | 446 | 30 | 720 |
+Untuk KBM, Formula ID otomatis tidak tersedia karena tabel referensi menampilkan tanda `-`. Ekspor akan ditahan sampai pengguna memilih override `1644 (PJE)` atau mengganti layanan.
 
-Default values for a new row:
+## Formula JSON
 
-- Service: PKH (`420`)
-- Minimum weight: `1300` grams
-- Increment weight: `1000` grams
-
-An imported tariff fills both minimum tariff and increment tariff, matching the previous application.
-
-## Tariff formula
-
-`tariff_formula_id` is always `1288` and `disableTariff` is always `0`.
-
-`tariff_formula_data` is exported as a JSON string with this exact structure:
+`tariff_formula_data` diekspor sebagai string JSON:
 
 ```json
 {
-  "actual_weight_1": 1300,
+  "actual_weight_1": 1000,
   "base_tariff_1": 10000,
   "base_tariff_2": 10000,
   "kelipatan": 1000,
@@ -91,148 +82,49 @@ An imported tariff fills both minimum tariff and increment tariff, matching the 
 }
 ```
 
-Mappings:
+`disableTariff` tetap `0`. Exporter menolak angka kosong atau tidak valid, SLA tidak valid, Formula ID yang tidak tersedia, dan data duplikat kritis.
 
-- Minimum Weight → `actual_weight_1`
-- Minimum Tariff → `base_tariff_1`
-- Increment Tariff → `base_tariff_2`
-- Increment Weight → `kelipatan`
-- Numeric Salesforce value → `kdlayanan_pelanggan`
+## Workbook keluaran
 
-The exporter rejects missing numeric values, `NaN`, `Infinity`, `undefined`, and malformed formula data.
+- Nama lembar kerja: `TariffCustomer`
+- Nama file: `Tarif_Negotiable_<Nomor Salesforce>.xlsx`
+- Jumlah kolom: 13
+- Kode asal, tujuan, tanggal, kode pelanggan, deskripsi, dan JSON ditulis sebagai teks
+- Service ID, SLA, Formula ID, dan `disableTariff` ditulis sebagai angka
 
-## Output workbook
+## Deployment Cloudflare Pages
 
-Worksheet name:
+Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
 
-```text
-TariffCustomer
-```
+1. Letakkan `index.html` di root repositori.
+2. Gunakan tanpa build command.
+3. Gunakan root proyek sebagai output directory bila diminta.
+4. Pastikan custom domain `tarif.posnew.com` telah terpasang.
+5. Folder `functions/` harus ikut diunggah. Middleware akan mengalihkan `tarifmile.pages.dev` ke `tarif.posnew.com` sambil mempertahankan path dan query.
 
-Filename pattern:
+HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20260814-200`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
 
-```text
-Tarif_Negotiable_<Salesforce Number>.xlsx
-```
-
-Exact output headers and order:
-
-1. `tariff_from_code`
-2. `tariff_to_code`
-3. `service_id`
-4. `tariff_sla_day`
-5. `tariff_sla_hours`
-6. `tariff_formula_id`
-7. `tariff_formula_data`
-8. `expiry_start`
-9. `expiry_end`
-10. `customer_type_code`
-11. `disableTariff`
-12. `tariff_sub_service_code`
-13. `tariff_sub_service_description`
-
-Text cell types are used for origin, destination, formula JSON, dates, customer code, Salesforce/sub-service code, and description. Numeric cell types are used for service ID, SLA values, formula ID, and disable tariff.
-
-Descriptions are trimmed and converted to uppercase only in the exported workbook and export preview.
-
-### Spreadsheet formula-injection protection
-
-Potentially dangerous user-entered text values are written as explicit Excel text cells (`t: "s"`), not formulas. The application does not silently prefix or rewrite legitimate operational values.
-
-## Validation
-
-Global validation covers required fields, Salesforce digits, and the effective date range. Row validation covers origin, destination, service, positive weights, non-negative tariffs, required descriptions, and duplicate origin–destination–service combinations.
-
-Statuses are:
-
-- Ready
-- Needs Review
-- Invalid
-- Incomplete
-
-Critical validation errors and duplicate route-service combinations disable export.
-
-## Local use
-
-Run a static server from the project root. Examples:
+## Pengujian
 
 ```bash
-python -m http.server 8080
+node tests/regression.cjs
+python tests/ui-smoke.py
 ```
 
-or:
+Smoke test memerlukan Playwright dan browser Chromium.
 
-```bash
-npx serve .
-```
-
-Open `http://localhost:8080/`. Opening `index.html` directly with `file://` is not recommended because root-relative asset paths are designed for production hosting.
-
-## Browser requirements
-
-Use a current version of Chrome, Edge, Firefox, or Safari with JavaScript, FileReader, Blob downloads, native dialogs, and modern DOM APIs enabled. Large workbooks can be limited by available browser memory.
-
-SheetJS is pinned to `0.20.3`:
-
-```text
-https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js
-```
-
-A clear inline error is displayed if the dependency cannot load.
-
-## Manual deployment to Cloudflare Pages
-
-This project is a static site with no build command, server, secret, environment variable, or redirect requirement.
-
-1. Upload the repository contents with `index.html` at the deployment root.
-2. Use no build command.
-3. Set the output directory to the project root when required by the deployment UI.
-4. Attach the custom domain `tarif.posnew.com` manually.
-5. Verify that `_headers`, icons, `robots.txt`, `sitemap.xml`, and `404.html` are served.
-
-## Project structure
+## Struktur penting
 
 ```text
 /
 ├── index.html
-├── 404.html
 ├── assets/
 │   ├── css/
-│   │   ├── app.css
-│   │   └── 404.css
-│   └── js/
-│       ├── constants.js
-│       ├── importer.js
-│       ├── validation.js
-│       ├── export.js
-│       └── app.js
+│   ├── js/
+│   └── templates/Contoh_Import_Tarif_Route_v2.0.0.xlsx
+├── functions/_middleware.js
 ├── tests/
-│   ├── fixtures/
-│   ├── regression.cjs
-│   └── ui-smoke.py
-├── favicon.svg
-├── favicon-32x32.png
-├── apple-touch-icon.png
-├── og-cover.png
-├── site.webmanifest
-├── robots.txt
-├── sitemap.xml
 ├── _headers
-├── README.md
 ├── CHANGELOG.md
 └── QA-REPORT.md
 ```
-
-## Troubleshooting
-
-- **SheetJS could not be loaded:** confirm internet access to the pinned CDN and reload.
-- **Required columns not found:** verify the first worksheet contains `RUTE KANTOR`, `TARIF`, and `Layanan` on the same header row.
-- **No valid routes found:** remove empty route rows and ensure `RUTE KANTOR` contains values.
-- **Encrypted workbook:** remove the password before importing.
-- **Export disabled:** resolve all global and critical row validation issues.
-- **Leading zeroes:** keep route codes as text in the source workbook whenever possible; the application preserves imported and edited values as text.
-- **Large workbook failure:** close other memory-heavy tabs, split the source file, and retry.
-
-## Maintenance warning
-
-Do not change service IDs, SLA rules, formula ID, formula JSON keys, output headers/order, cell types, worksheet name, filename pattern, or row defaults without running regression tests and comparing output against the operational MILE import requirements.
