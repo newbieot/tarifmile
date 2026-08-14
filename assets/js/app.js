@@ -36,7 +36,7 @@
       'previewCount', 'previewGrid', 'previewTableBody', 'exportHeadline', 'exportFilename',
       'exportButton', 'downloadAgainButton', 'toastRegion', 'liveStatus', 'helpButton',
       'helpDialog', 'confirmDialog', 'confirmDialogTitle', 'confirmDialogText',
-      'confirmDialogAction', 'exportDialog', 'exportConfirmGrid', 'confirmExportButton'
+      'confirmDialogAction', 'exportDialog', 'exportConfirmGrid', 'confirmExportButton', 'appVersion'
     ].forEach((id) => { dom[id] = byId(id); });
   }
 
@@ -109,7 +109,7 @@
   function createServiceSelect(row) {
     const select = document.createElement('select');
     select.dataset.field = 'serviceId';
-    select.setAttribute('aria-label', `Service for route ${row.id}`);
+    select.setAttribute('aria-label', `Layanan untuk rute ${row.id}`);
     T.SERVICES.forEach((service) => {
       const option = document.createElement('option');
       option.value = String(service.id);
@@ -120,12 +120,34 @@
     return select;
   }
 
+  function createFormulaSelect(row) {
+    const select = document.createElement('select');
+    select.dataset.field = 'formulaIdOverride';
+    select.setAttribute('aria-label', `Formula ID untuk rute ${row.id}`);
+    const automatic = document.createElement('option');
+    const mapped = T.getServiceFormulaId(row.serviceId);
+    automatic.value = '';
+    automatic.textContent = Number.isFinite(mapped)
+      ? `Otomatis · ${mapped}`
+      : 'Otomatis · tidak tersedia';
+    automatic.selected = String(row.formulaIdOverride ?? '') === '';
+    select.appendChild(automatic);
+    T.FORMULA_OVERRIDE_OPTIONS.forEach((formula) => {
+      const option = document.createElement('option');
+      option.value = String(formula.id);
+      option.textContent = `${formula.id} · ${formula.name} (manual)`;
+      option.selected = Number(row.formulaIdOverride) === formula.id;
+      select.appendChild(option);
+    });
+    return select;
+  }
+
   function createInput(row, field, type, attributes) {
     const input = document.createElement('input');
     input.type = type;
     input.dataset.field = field;
     input.value = row[field] ?? '';
-    input.setAttribute('aria-label', `${field.replace(/([A-Z])/g, ' $1')} for route ${row.id}`);
+    input.setAttribute('aria-label', `${field.replace(/([A-Z])/g, ' $1')} untuk rute ${row.id}`);
     Object.entries(attributes || {}).forEach(([name, value]) => input.setAttribute(name, value));
     return input;
   }
@@ -159,13 +181,13 @@
     main.className = 'mobile-summary-main';
     const route = document.createElement('strong');
     route.className = 'mobile-route';
-    route.textContent = `${row.origin || 'Origin'} → ${row.destination || 'Destination'}`;
+    route.textContent = `${row.origin || 'Asal'} → ${row.destination || 'Tujuan'}`;
     const meta = document.createElement('span');
     meta.className = 'mobile-meta';
     const serviceText = document.createElement('span');
     serviceText.textContent = T.getServiceLabel(row.serviceId);
     const tariffText = document.createElement('span');
-    tariffText.textContent = row.minimumTariff === '' ? 'Tariff incomplete' : `Rp ${Number(row.minimumTariff).toLocaleString('id-ID')}`;
+    tariffText.textContent = row.minimumTariff === '' ? 'Tarif belum lengkap' : `Rp ${Number(row.minimumTariff).toLocaleString('id-ID')}`;
     const status = document.createElement('span');
     status.className = `status-badge ${result.status}`;
     status.dataset.role = 'row-status';
@@ -176,7 +198,7 @@
     expand.type = 'button';
     expand.className = 'expand-row-button';
     expand.dataset.action = 'expand';
-    expand.setAttribute('aria-label', row.expanded ? 'Collapse tariff route' : 'Expand tariff route');
+    expand.setAttribute('aria-label', row.expanded ? 'Tutup detail rute tarif' : 'Buka detail rute tarif');
     expand.appendChild(svg(['m6 9 6 6 6-6']));
     wrap.append(main, expand);
     td.appendChild(wrap);
@@ -197,13 +219,13 @@
     selectBox.type = 'checkbox';
     selectBox.checked = row.selected;
     selectBox.dataset.action = 'select';
-    selectBox.setAttribute('aria-label', `Select tariff route ${rowIndex + 1}`);
-    tr.appendChild(createCell('Select', selectBox));
+    selectBox.setAttribute('aria-label', `Pilih rute tarif ${rowIndex + 1}`);
+    tr.appendChild(createCell('Pilih', selectBox));
 
     const rowNumber = document.createElement('span');
     rowNumber.className = 'row-number';
     rowNumber.textContent = String(rowIndex + 1);
-    tr.appendChild(createCell('Number', rowNumber));
+    tr.appendChild(createCell('Nomor', rowNumber));
 
     const statusWrap = document.createElement('div');
     statusWrap.className = 'status-cell';
@@ -218,25 +240,26 @@
     statusWrap.append(statusBadge, statusMessage);
     tr.appendChild(createCell('Status', statusWrap));
 
-    tr.appendChild(createCell('Origin', createInput(row, 'origin', 'text', { placeholder: '29400', inputmode: 'text', maxlength: '12', spellcheck: 'false' }), 'origin'));
-    tr.appendChild(createCell('Destination', createInput(row, 'destination', 'text', { placeholder: '10110', inputmode: 'text', maxlength: '12', spellcheck: 'false' }), 'destination'));
-    tr.appendChild(createCell('Service', createServiceSelect(row), 'serviceId'));
+    tr.appendChild(createCell('Asal', createInput(row, 'origin', 'text', { placeholder: '29400', inputmode: 'text', maxlength: '12', spellcheck: 'false' }), 'origin'));
+    tr.appendChild(createCell('Tujuan', createInput(row, 'destination', 'text', { placeholder: '10110', inputmode: 'text', maxlength: '12', spellcheck: 'false' }), 'destination'));
+    tr.appendChild(createCell('Layanan', createServiceSelect(row), 'serviceId'));
+    tr.appendChild(createCell('Formula ID', createFormulaSelect(row), 'formulaIdOverride'));
 
-    const sla = T.getSla(row.serviceId);
+    const sla = T.getSla(row.slaDays);
     const slaBox = document.createElement('div');
     slaBox.className = 'sla-display';
-    const slaDays = document.createElement('strong');
-    slaDays.textContent = `${sla.days} days`;
+    const slaDays = createInput(row, 'slaDays', 'number', { min: '1', step: '1', inputmode: 'numeric', placeholder: 'Hari', required: 'required' });
     const slaHours = document.createElement('small');
-    slaHours.textContent = `${sla.hours} hours`;
+    slaHours.className = 'sla-hours';
+    slaHours.textContent = Number.isFinite(sla.hours) ? `${sla.hours} jam` : 'Wajib diisi';
     slaBox.append(slaDays, slaHours);
-    tr.appendChild(createCell('SLA', slaBox));
+    tr.appendChild(createCell('SLA (hari)', slaBox, 'slaDays'));
 
-    tr.appendChild(createCell('Minimum Weight', createInput(row, 'minimumWeight', 'number', { min: '1', step: '1', inputmode: 'numeric' }), 'minimumWeight'));
-    tr.appendChild(createCell('Minimum Tariff', createInput(row, 'minimumTariff', 'number', { min: '0', step: '1', inputmode: 'decimal', placeholder: '0' }), 'minimumTariff'));
-    tr.appendChild(createCell('Increment Weight', createInput(row, 'incrementWeight', 'number', { min: '1', step: '1', inputmode: 'numeric' }), 'incrementWeight'));
-    tr.appendChild(createCell('Increment Tariff', createInput(row, 'incrementTariff', 'number', { min: '0', step: '1', inputmode: 'decimal', placeholder: '0' }), 'incrementTariff'));
-    tr.appendChild(createCell('Description', createInput(row, 'description', 'text', { placeholder: 'Tariff description', spellcheck: 'false' }), 'description'));
+    tr.appendChild(createCell('Berat Minimum', createInput(row, 'minimumWeight', 'number', { min: '1', step: '1', inputmode: 'numeric' }), 'minimumWeight'));
+    tr.appendChild(createCell('Tarif Minimum', createInput(row, 'minimumTariff', 'number', { min: '0', step: '1', inputmode: 'decimal', placeholder: '0' }), 'minimumTariff'));
+    tr.appendChild(createCell('Berat Kelipatan', createInput(row, 'incrementWeight', 'number', { min: '1', step: '1', inputmode: 'numeric' }), 'incrementWeight'));
+    tr.appendChild(createCell('Tarif Kelipatan', createInput(row, 'incrementTariff', 'number', { min: '0', step: '1', inputmode: 'decimal', placeholder: '0' }), 'incrementTariff'));
+    tr.appendChild(createCell('Deskripsi', createInput(row, 'description', 'text', { placeholder: 'Deskripsi tarif', spellcheck: 'false' }), 'description'));
 
     const actions = document.createElement('div');
     actions.className = 'row-actions';
@@ -244,18 +267,18 @@
     duplicate.type = 'button';
     duplicate.className = 'icon-button';
     duplicate.dataset.action = 'duplicate';
-    duplicate.setAttribute('aria-label', `Duplicate tariff route ${rowIndex + 1}`);
-    duplicate.title = 'Duplicate row';
+    duplicate.setAttribute('aria-label', `Duplikat rute tarif ${rowIndex + 1}`);
+    duplicate.title = 'Duplikat baris';
     duplicate.appendChild(svg(['M8 8h11v11H8z', 'M5 16H4V5h11v1']));
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'icon-button icon-button--danger';
     remove.dataset.action = 'delete';
-    remove.setAttribute('aria-label', `Delete tariff route ${rowIndex + 1}`);
-    remove.title = 'Delete row';
+    remove.setAttribute('aria-label', `Hapus rute tarif ${rowIndex + 1}`);
+    remove.title = 'Hapus baris';
     remove.appendChild(svg(['M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5']));
     actions.append(duplicate, remove);
-    tr.appendChild(createCell('Actions', actions));
+    tr.appendChild(createCell('Tindakan', actions));
 
     return tr;
   }
@@ -316,19 +339,26 @@
         input.setAttribute('aria-invalid', result.errors[field] ? 'true' : 'false');
       }
     });
-    const sla = T.getSla(row.serviceId);
+    const formulaSelect = tr.querySelector('[data-field="formulaIdOverride"]');
+    if (formulaSelect && formulaSelect.options[0]) {
+      const mappedFormula = T.getServiceFormulaId(row.serviceId);
+      formulaSelect.options[0].textContent = Number.isFinite(mappedFormula)
+        ? `Otomatis · ${mappedFormula}`
+        : 'Otomatis · tidak tersedia';
+    }
+    const sla = T.getSla(row.slaDays);
     const slaBox = tr.querySelector('.sla-display');
     if (slaBox) {
-      slaBox.querySelector('strong').textContent = `${sla.days} days`;
-      slaBox.querySelector('small').textContent = `${sla.hours} hours`;
+      const hours = slaBox.querySelector('.sla-hours');
+      if (hours) hours.textContent = Number.isFinite(sla.hours) ? `${sla.hours} jam` : 'Wajib diisi';
     }
     const mobileRoute = tr.querySelector('.mobile-route');
-    if (mobileRoute) mobileRoute.textContent = `${row.origin || 'Origin'} → ${row.destination || 'Destination'}`;
+    if (mobileRoute) mobileRoute.textContent = `${row.origin || 'Asal'} → ${row.destination || 'Tujuan'}`;
     const mobileMeta = tr.querySelector('.mobile-meta');
     if (mobileMeta) {
       const spans = mobileMeta.querySelectorAll(':scope > span');
       if (spans[0]) spans[0].textContent = T.getServiceLabel(row.serviceId);
-      if (spans[1]) spans[1].textContent = row.minimumTariff === '' ? 'Tariff incomplete' : `Rp ${Number(row.minimumTariff).toLocaleString('id-ID')}`;
+      if (spans[1]) spans[1].textContent = row.minimumTariff === '' ? 'Tarif belum lengkap' : `Rp ${Number(row.minimumTariff).toLocaleString('id-ID')}`;
     }
   }
 
@@ -347,10 +377,10 @@
       dom[field].setAttribute('aria-invalid', message ? 'true' : 'false');
     });
     if (result.valid) {
-      dom.setupCompletion.textContent = 'Customer setup complete';
+      dom.setupCompletion.textContent = 'Data pelanggan lengkap';
       dom.setupCompletion.classList.add('is-complete');
     } else {
-      dom.setupCompletion.textContent = `Complete ${result.remainingFields} required field${result.remainingFields === 1 ? '' : 's'}`;
+      dom.setupCompletion.textContent = `Lengkapi ${result.remainingFields} kolom wajib`;
       dom.setupCompletion.classList.remove('is-complete');
     }
   }
@@ -363,10 +393,10 @@
     dom.invalidRoutesCount.textContent = counts.invalid + counts.incomplete;
     dom.duplicateRoutesCount.textContent = counts.duplicates;
     const acceptable = counts.ready + counts.needsReview;
-    if (!counts.total) dom.validationSentence.textContent = 'Add a tariff route to continue.';
-    else if (state.validation.exportable) dom.validationSentence.textContent = `${acceptable} of ${counts.total} tariff routes are ready for export.`;
-    else if (counts.critical) dom.validationSentence.textContent = `${counts.critical} tariff route${counts.critical === 1 ? '' : 's'} must be corrected before export.`;
-    else dom.validationSentence.textContent = `${acceptable} of ${counts.total} tariff routes are ready for review.`;
+    if (!counts.total) dom.validationSentence.textContent = 'Tambahkan rute tarif untuk melanjutkan.';
+    else if (state.validation.exportable) dom.validationSentence.textContent = `${acceptable} dari ${counts.total} rute tarif siap diekspor.`;
+    else if (counts.critical) dom.validationSentence.textContent = `${counts.critical} rute tarif harus diperbaiki sebelum ekspor.`;
+    else dom.validationSentence.textContent = `${acceptable} dari ${counts.total} rute tarif siap ditinjau.`;
   }
 
   function renderWorkflow() {
@@ -406,15 +436,15 @@
   function renderPreview() {
     const globalValues = getGlobalValues();
     const records = buildPreviewRecords();
-    dom.previewCount.textContent = `${records.length} ready row${records.length === 1 ? '' : 's'}`;
+    dom.previewCount.textContent = `${records.length} baris siap`;
     const services = [...new Set(records.map((record) => String(record.service_id)))].join(', ') || '—';
     dom.previewGrid.replaceChildren(
-      addPreviewItem('Customer ID', globalValues.customerId ? T.normalizeCustomerId(globalValues.customerId) : '—'),
+      addPreviewItem('ID Pelanggan', globalValues.customerId ? T.normalizeCustomerId(globalValues.customerId) : '—'),
       addPreviewItem('Salesforce', globalValues.salesforceNumber || '—'),
-      addPreviewItem('Effective Period', globalValues.startDate && globalValues.endDate ? `${globalValues.startDate} → ${globalValues.endDate}` : '—'),
-      addPreviewItem('Ready Routes', String(records.length)),
-      addPreviewItem('Services', services),
-      addPreviewItem('Worksheet', T.DEFAULTS.worksheetName)
+      addPreviewItem('Periode Berlaku', globalValues.startDate && globalValues.endDate ? `${globalValues.startDate} → ${globalValues.endDate}` : '—'),
+      addPreviewItem('Rute Siap', String(records.length)),
+      addPreviewItem('Layanan', services),
+      addPreviewItem('Lembar Kerja', T.DEFAULTS.worksheetName)
     );
 
     const fragment = document.createDocumentFragment();
@@ -424,7 +454,7 @@
         record.tariff_from_code,
         record.tariff_to_code,
         String(record.service_id),
-        `${record.tariff_sla_day} days · ${record.tariff_sla_hours} hours`,
+        `${record.tariff_sla_day} hari · ${record.tariff_sla_hours} jam`,
         String(record.tariff_formula_id),
         record.tariff_formula_data,
         record.customer_type_code,
@@ -442,20 +472,20 @@
 
   function renderExportBar() {
     const globalValues = getGlobalValues();
-    const filename = globalValues.salesforceNumber ? T.getOutputFilename(globalValues.salesforceNumber) : 'Tarif_Negotiable_<Salesforce Number>.xlsx';
-    dom.exportFilename.textContent = `Output file: ${filename}`;
+    const filename = globalValues.salesforceNumber ? T.getOutputFilename(globalValues.salesforceNumber) : 'Tarif_Negotiable_<Nomor Salesforce>.xlsx';
+    dom.exportFilename.textContent = `File keluaran: ${filename}`;
     dom.exportButton.disabled = !state.validation.exportable || state.processing || !root.XLSX;
-    if (!root.XLSX) dom.exportHeadline.textContent = 'SheetJS is unavailable. Check the connection and reload the page.';
-    else if (state.processing) dom.exportHeadline.textContent = 'Processing the selected workbook…';
-    else if (state.validation.exportable) dom.exportHeadline.textContent = `${state.validation.readyCount} tariff route${state.validation.readyCount === 1 ? '' : 's'} ready for export.`;
-    else dom.exportHeadline.textContent = 'Complete the customer setup and validate the tariff routes before exporting.';
+    if (!root.XLSX) dom.exportHeadline.textContent = 'SheetJS tidak tersedia. Periksa koneksi lalu muat ulang halaman.';
+    else if (state.processing) dom.exportHeadline.textContent = 'Memproses workbook yang dipilih…';
+    else if (state.validation.exportable) dom.exportHeadline.textContent = `${state.validation.readyCount} rute tarif siap diekspor.`;
+    else dom.exportHeadline.textContent = 'Lengkapi data pelanggan, SLA, dan validasi seluruh rute sebelum ekspor.';
     dom.downloadAgainButton.hidden = !state.generated;
   }
 
   function renderBulkToolbar() {
     const selected = state.rows.filter((row) => row.selected).length;
     dom.bulkToolbar.hidden = selected === 0;
-    dom.selectedRowsText.textContent = `${selected} row${selected === 1 ? '' : 's'} selected`;
+    dom.selectedRowsText.textContent = `${selected} baris dipilih`;
   }
 
   function syncSelectAll() {
@@ -508,13 +538,15 @@
         origin: row.origin,
         destination: row.destination,
         serviceId: row.serviceId,
+        formulaIdOverride: row.formulaIdOverride,
+        slaDays: row.slaDays,
         minimumWeight: row.minimumWeight,
         minimumTariff: row.minimumTariff,
         incrementWeight: row.incrementWeight,
         incrementTariff: row.incrementTariff,
         description: row.description,
         importNeedsReview: true,
-        importReviewMessage: 'Duplicated row. Change the route or resolve the duplicate warning.',
+        importReviewMessage: 'Baris diduplikasi. Ubah rute atau selesaikan peringatan duplikat.',
         expanded: true
       });
       const index = state.rows.indexOf(row);
@@ -525,7 +557,7 @@
     clearGenerated();
     refresh({ renderRows: true });
     if (newRows[0]) focusRow(newRows[0].id, 'origin');
-    showToast(`${newRows.length} tariff row${newRows.length === 1 ? '' : 's'} duplicated.`, 'warning');
+    showToast(`${newRows.length} baris tarif berhasil diduplikasi.`, 'warning');
   }
 
   function deleteRows(rowIds) {
@@ -544,7 +576,7 @@
     return new Promise((resolve) => {
       dom.confirmDialogTitle.textContent = title;
       dom.confirmDialogText.textContent = text;
-      dom.confirmDialogAction.textContent = actionLabel || 'Continue';
+      dom.confirmDialogAction.textContent = actionLabel || 'Lanjutkan';
       const onClose = () => {
         dom.confirmDialog.removeEventListener('close', onClose);
         resolve(dom.confirmDialog.returnValue === 'confirm');
@@ -560,7 +592,7 @@
     if (!file) return;
     dom.selectedFileName.textContent = file.name;
     dom.selectedFileMeta.textContent = `${T.getExtension(file.name).toUpperCase()} · ${T.formatFileSize(file.size)}`;
-    dom.selectedFileStatus.textContent = status || 'Ready to process';
+    dom.selectedFileStatus.textContent = status || 'Siap diproses';
   }
 
   function renderImportSummary(summary) {
@@ -572,7 +604,7 @@
     dom.duplicatesMetric.textContent = summary.duplicatesSkipped;
     dom.reviewMetric.textContent = summary.rowsRequiringReview;
     const skipped = summary.duplicatesSkipped + summary.emptyRowsSkipped;
-    dom.importSummaryText.textContent = `${summary.routesImported} tariff route${summary.routesImported === 1 ? '' : 's'} imported. ${summary.duplicatesSkipped} duplicate${summary.duplicatesSkipped === 1 ? '' : 's'} and ${summary.emptyRowsSkipped} empty row${summary.emptyRowsSkipped === 1 ? '' : 's'} were skipped.${skipped === 0 ? ' No source rows were skipped.' : ''}`;
+    dom.importSummaryText.textContent = `${summary.routesImported} rute tarif diimpor. ${summary.duplicatesSkipped} duplikat dan ${summary.emptyRowsSkipped} baris kosong dilewati.${skipped === 0 ? ' Tidak ada baris sumber yang dilewati.' : ''}`;
     dom.toggleDuplicatesButton.hidden = summary.duplicateRoutes.length === 0;
     dom.duplicateList.hidden = true;
     dom.duplicateList.replaceChildren();
@@ -593,25 +625,25 @@
     if (state.processing) return;
     state.processing = true;
     clearGenerated();
-    renderFileCard(file, 'Waiting to process');
+    renderFileCard(file, 'Menunggu diproses');
     setImportMessage('', '');
-    setProgress('Reading workbook', 'Preparing the selected file…', true);
+    setProgress('Membaca workbook', 'Menyiapkan file yang dipilih…', true);
     refresh();
 
     try {
       const result = await T.readWorkbookFile(file, (title, detail) => setProgress(title, detail, true));
-      setProgress('Validating data', 'Checking imported routes and tariff values…', true);
+      setProgress('Memvalidasi data', 'Memeriksa rute impor dan nilai tarif…', true);
       state.rows = result.rows;
       state.rows[0].expanded = true;
       renderImportSummary(result.summary);
-      renderFileCard(file, `${result.summary.routesImported} routes imported from ${result.sheetName}`);
-      setImportMessage(`${result.summary.routesImported} tariff routes imported successfully. Review any highlighted rows before export.`, 'success');
-      showToast('Tariff routes imported successfully.', 'success');
-      announce(`${result.summary.routesImported} tariff routes imported.`);
+      renderFileCard(file, `${result.summary.routesImported} rute diimpor dari ${result.sheetName}`);
+      setImportMessage(`${result.summary.routesImported} rute tarif berhasil diimpor. Isi SLA dan tinjau baris yang disorot sebelum ekspor.`, 'success');
+      showToast('Rute tarif berhasil diimpor.', 'success');
+      announce(`${result.summary.routesImported} rute tarif diimpor.`);
     } catch (error) {
-      setImportMessage(error && error.message ? error.message : 'The selected workbook could not be processed.', 'error');
-      renderFileCard(file, 'Import failed');
-      showToast(error && error.message ? error.message : 'Import failed.', 'error');
+      setImportMessage(error && error.message ? error.message : 'Workbook yang dipilih tidak dapat diproses.', 'error');
+      renderFileCard(file, 'Impor gagal');
+      showToast(error && error.message ? error.message : 'Impor gagal.', 'error');
     } finally {
       state.processing = false;
       setProgress('', '', false);
@@ -626,7 +658,7 @@
     setImportMessage('', '');
     renderImportSummary(null);
     dom.fileInput.value = '';
-    showToast('Imported file reference removed. Edited tariff rows were kept.', 'success');
+    showToast('Referensi file impor dihapus. Baris tarif yang telah diedit tetap dipertahankan.', 'success');
     refresh();
   }
 
@@ -662,21 +694,21 @@
     const globals = getGlobalValues();
     const serviceNames = [...new Set(state.rows.map((row) => T.getServiceLabel(row.serviceId)))].join(', ');
     return [
-      ['Customer ID', T.normalizeCustomerId(globals.customerId)],
-      ['Salesforce Number', globals.salesforceNumber],
-      ['Effective Period', `${globals.startDate} → ${globals.endDate}`],
-      ['Route Count', String(state.rows.length)],
-      ['Valid Route Count', String(state.validation.readyCount)],
-      ['Selected Services', serviceNames],
-      ['Output Filename', T.getOutputFilename(globals.salesforceNumber)],
-      ['Worksheet', T.DEFAULTS.worksheetName]
+      ['ID Pelanggan', T.normalizeCustomerId(globals.customerId)],
+      ['Nomor Salesforce', globals.salesforceNumber],
+      ['Periode Berlaku', `${globals.startDate} → ${globals.endDate}`],
+      ['Jumlah Rute', String(state.rows.length)],
+      ['Rute Valid', String(state.validation.readyCount)],
+      ['Layanan Terpilih', serviceNames],
+      ['Nama File Keluaran', T.getOutputFilename(globals.salesforceNumber)],
+      ['Lembar Kerja', T.DEFAULTS.worksheetName]
     ];
   }
 
   function openExportDialog() {
     refresh();
     if (!state.validation.exportable) {
-      showToast('Resolve the customer and route validation errors before export.', 'error');
+      showToast('Selesaikan kesalahan data pelanggan dan rute sebelum ekspor.', 'error');
       return;
     }
     const fragment = document.createDocumentFragment();
@@ -688,18 +720,18 @@
   function performExport() {
     if (!state.validation.exportable) return;
     state.processing = true;
-    setProgress('Preparing workbook', 'Creating the MILE-compatible XLSX file…', true);
+    setProgress('Menyiapkan workbook', 'Membuat file XLSX yang kompatibel dengan MILE…', true);
     refresh();
     root.setTimeout(() => {
       try {
         const generated = T.generateAndDownload(getGlobalValues(), state.rows);
         state.generated = { blob: generated.blob, filename: generated.filename, createdAt: Date.now() };
-        setProgress('Download ready', 'Workbook generated successfully.', true);
-        showToast('Workbook generated successfully.', 'success');
-        announce('Workbook generated successfully.');
+        setProgress('Unduhan siap', 'Workbook berhasil dibuat.', true);
+        showToast('Workbook berhasil dibuat.', 'success');
+        announce('Workbook berhasil dibuat.');
       } catch (error) {
-        showToast(error && error.message ? error.message : 'Workbook generation failed.', 'error');
-        announce('Workbook generation failed.');
+        showToast(error && error.message ? error.message : 'Pembuatan workbook gagal.', 'error');
+        announce('Pembuatan workbook gagal.');
       } finally {
         state.processing = false;
         root.setTimeout(() => setProgress('', '', false), 550);
@@ -712,9 +744,9 @@
     if (!state.generated) return;
     try {
       T.downloadBlob(state.generated.blob, state.generated.filename);
-      showToast('Workbook download started again.', 'success');
+      showToast('Unduhan workbook dimulai kembali.', 'success');
     } catch (_) {
-      showToast('The workbook could not be downloaded again. Generate a new workbook.', 'error');
+      showToast('Workbook tidak dapat diunduh kembali. Buat workbook baru.', 'error');
     }
   }
 
@@ -743,17 +775,17 @@
     });
     dom.toggleDuplicatesButton.addEventListener('click', () => {
       dom.duplicateList.hidden = !dom.duplicateList.hidden;
-      dom.toggleDuplicatesButton.textContent = dom.duplicateList.hidden ? 'View skipped routes' : 'Hide skipped routes';
+      dom.toggleDuplicatesButton.textContent = dom.duplicateList.hidden ? 'Lihat rute yang dilewati' : 'Sembunyikan rute';
     });
 
     dom.addRowButton.addEventListener('click', () => addRow());
     dom.resetRowsButton.addEventListener('click', async () => {
       const meaningful = state.rows.some((row) => row.origin || row.destination || row.minimumTariff !== '' || row.description);
-      if (!meaningful || await confirmAction('Reset tariff rows?', 'All imported and manually edited tariff rows will be replaced with one blank row. Customer details will be kept.', 'Reset Rows')) resetRows();
+      if (!meaningful || await confirmAction('Atur ulang baris tarif?', 'Semua rute hasil impor dan edit manual akan diganti dengan satu baris kosong. Data pelanggan tetap dipertahankan.', 'Atur Ulang Baris')) resetRows();
     });
     dom.clearWorkspaceButton.addEventListener('click', async () => {
       const meaningful = state.rows.some((row) => row.origin || row.destination || row.minimumTariff !== '' || row.description) || Object.values(getGlobalValues()).some(Boolean);
-      if (!meaningful || await confirmAction('Clear the workspace?', 'Customer details, the selected file, tariff rows, filters, messages, and generated workbook references will be cleared.', 'Clear Workspace')) clearWorkspace();
+      if (!meaningful || await confirmAction('Bersihkan ruang kerja?', 'Data pelanggan, file terpilih, baris tarif, filter, pesan, dan referensi workbook akan dihapus.', 'Bersihkan Ruang Kerja')) clearWorkspace();
     });
 
     dom.rowSearch.addEventListener('input', () => { state.filters.search = dom.rowSearch.value; refresh({ renderRows: true }); });
@@ -781,7 +813,7 @@
     dom.deleteSelectedButton.addEventListener('click', async () => {
       const selected = state.rows.filter((row) => row.selected);
       if (!selected.length) return;
-      if (await confirmAction('Delete selected rows?', `${selected.length} selected tariff row${selected.length === 1 ? '' : 's'} will be removed.`, 'Delete Rows')) deleteRows(selected.map((row) => row.id));
+      if (await confirmAction('Hapus baris terpilih?', `${selected.length} baris tarif terpilih akan dihapus.`, 'Hapus Baris')) deleteRows(selected.map((row) => row.id));
     });
 
     dom.tariffTableBody.addEventListener('input', (event) => {
@@ -807,6 +839,10 @@
         row.serviceId = Number(event.target.value);
         clearGenerated();
         refresh({ rowId: row.id });
+      } else if (event.target.dataset.field === 'formulaIdOverride') {
+        row.formulaIdOverride = event.target.value;
+        clearGenerated();
+        refresh({ rowId: row.id });
       } else if (event.target.dataset.action === 'select') {
         row.selected = event.target.checked;
         refresh({ rowId: row.id });
@@ -824,7 +860,7 @@
       } else if (button.dataset.action === 'duplicate') duplicateRows([row]);
       else if (button.dataset.action === 'delete') {
         const hasData = row.origin || row.destination || row.minimumTariff !== '' || row.description;
-        if (!hasData || await confirmAction('Delete tariff row?', 'This tariff route will be removed from the workspace.', 'Delete Row')) deleteRows([row.id]);
+        if (!hasData || await confirmAction('Hapus baris tarif?', 'Rute tarif ini akan dihapus dari ruang kerja.', 'Hapus Baris')) deleteRows([row.id]);
       }
     });
 
@@ -837,13 +873,14 @@
 
   function initialize() {
     cacheDom();
+    if (dom.appVersion) dom.appVersion.textContent = `Versi ${T.APP_VERSION}`;
     renderServiceOptions();
     bindGlobalEvents();
     state.validation = T.validateWorkspace(getGlobalValues(), state.rows);
     renderRows();
     refresh();
     if (!root.XLSX) {
-      setImportMessage('SheetJS could not be loaded. Check your internet connection and reload the page.', 'error');
+      setImportMessage('SheetJS tidak dapat dimuat. Periksa koneksi internet lalu muat ulang halaman.', 'error');
     }
   }
 

@@ -6,9 +6,9 @@
   const COLUMN_WIDTHS = Object.freeze([15, 15, 11, 14, 15, 17, 62, 14, 14, 22, 13, 25, 38]);
 
   function requireFinite(value, label) {
-    if (value === '' || value === null || value === undefined) throw new Error(`${label} must be a valid number.`);
+    if (value === '' || value === null || value === undefined) throw new Error(`${label} harus berupa angka yang valid.`);
     const numeric = Number(value);
-    if (!Number.isFinite(numeric)) throw new Error(`${label} must be a valid number.`);
+    if (!Number.isFinite(numeric)) throw new Error(`${label} harus berupa angka yang valid.`);
     return numeric;
   }
 
@@ -23,27 +23,34 @@
   function buildFormula(row, salesforceNumber) {
     const salesforceNumeric = namespace.numericSalesforce(salesforceNumber);
     if (!Number.isFinite(salesforceNumeric)) {
-      throw new Error('Salesforce Number must contain at least one digit.');
+      throw new Error('Nomor Salesforce harus memuat minimal satu angka.');
     }
 
     const formula = {
-      actual_weight_1: requireFinite(row.minimumWeight, 'Minimum weight'),
-      base_tariff_1: requireFinite(row.minimumTariff, 'Minimum tariff'),
-      base_tariff_2: requireFinite(row.incrementTariff, 'Increment tariff'),
-      kelipatan: requireFinite(row.incrementWeight, 'Increment weight'),
+      actual_weight_1: requireFinite(row.minimumWeight, 'Berat minimum'),
+      base_tariff_1: requireFinite(row.minimumTariff, 'Tarif minimum'),
+      base_tariff_2: requireFinite(row.incrementTariff, 'Tarif kelipatan'),
+      kelipatan: requireFinite(row.incrementWeight, 'Berat kelipatan'),
       kdlayanan_pelanggan: salesforceNumeric
     };
 
     const json = JSON.stringify(formula);
     if (!json || /NaN|Infinity|undefined/.test(json)) {
-      throw new Error('The tariff formula contains an invalid numeric value.');
+      throw new Error('Formula tarif memuat nilai angka yang tidak valid.');
     }
     return { object: formula, json };
   }
 
   function buildExportRecord(globalValues, row) {
-    const serviceId = requireFinite(row.serviceId, 'Service ID');
-    const sla = namespace.getSla(serviceId);
+    const serviceId = requireFinite(row.serviceId, 'ID Layanan');
+    const sla = namespace.getSla(row.slaDays);
+    if (!Number.isInteger(sla.days) || sla.days <= 0) {
+      throw new Error('SLA wajib diisi dalam jumlah hari bulat lebih dari 0.');
+    }
+    const formulaId = namespace.resolveFormulaId(row);
+    if (!Number.isFinite(formulaId)) {
+      throw new Error('Formula ID belum tersedia. Pilih Formula ID 1644 (PJE) atau layanan lain.');
+    }
     const formula = buildFormula(row, globalValues.salesforceNumber);
 
     return {
@@ -52,7 +59,7 @@
       service_id: serviceId,
       tariff_sla_day: sla.days,
       tariff_sla_hours: sla.hours,
-      tariff_formula_id: namespace.DEFAULTS.formulaId,
+      tariff_formula_id: formulaId,
       tariff_formula_data: formula.json,
       expiry_start: protectSpreadsheetText(String(globalValues.startDate ?? '').trim()),
       expiry_end: protectSpreadsheetText(String(globalValues.endDate ?? '').trim()),
@@ -64,12 +71,12 @@
   }
 
   function buildExportRecords(globalValues, rows) {
-    if (!Array.isArray(rows) || rows.length === 0) throw new Error('At least one tariff route is required.');
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('Minimal satu rute tarif wajib tersedia.');
     return rows.map((row) => buildExportRecord(globalValues, row));
   }
 
   function buildWorksheet(records) {
-    if (!root.XLSX || !root.XLSX.utils) throw new Error('SheetJS is unavailable. Reload the page and try again.');
+    if (!root.XLSX || !root.XLSX.utils) throw new Error('SheetJS tidak tersedia. Muat ulang halaman lalu coba lagi.');
 
     const worksheet = {};
     namespace.OUTPUT_HEADERS.forEach((header, columnIndex) => {
@@ -81,7 +88,7 @@
       namespace.OUTPUT_HEADERS.forEach((header, columnIndex) => {
         const value = record[header];
         const isNumeric = numericColumns.has(columnIndex);
-        if (isNumeric && !Number.isFinite(value)) throw new Error(`Invalid numeric value in ${header}.`);
+        if (isNumeric && !Number.isFinite(value)) throw new Error(`Nilai angka pada ${header} tidak valid.`);
         worksheet[root.XLSX.utils.encode_cell({ r: recordIndex + 1, c: columnIndex })] = {
           v: isNumeric ? Number(value) : String(value ?? ''),
           t: isNumeric ? 'n' : 's'
@@ -98,7 +105,7 @@
   }
 
   function buildWorkbook(globalValues, rows) {
-    if (!root.XLSX || !root.XLSX.utils) throw new Error('SheetJS is unavailable. Reload the page and try again.');
+    if (!root.XLSX || !root.XLSX.utils) throw new Error('SheetJS tidak tersedia. Muat ulang halaman lalu coba lagi.');
     const records = buildExportRecords(globalValues, rows);
     const worksheet = buildWorksheet(records);
     const workbook = root.XLSX.utils.book_new();
@@ -121,7 +128,7 @@
         cellDates: false
       });
     } catch (cause) {
-      const error = new Error('The workbook could not be generated. Review the tariff values and try again.');
+      const error = new Error('Workbook tidak dapat dibuat. Periksa kembali nilai tarif lalu coba lagi.');
       error.cause = cause;
       throw error;
     }

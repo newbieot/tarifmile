@@ -21,13 +21,13 @@
     const endDate = String(values.endDate ?? '').trim();
     const errors = {};
 
-    if (!customerId) errors.customerId = 'Customer ID is required.';
-    if (!salesforceNumber) errors.salesforceNumber = 'Salesforce Number is required.';
-    else if (!/[0-9]/.test(salesforceNumber)) errors.salesforceNumber = 'Salesforce Number must contain at least one digit.';
-    if (!startDate) errors.startDate = 'Effective Start Date is required.';
-    if (!endDate) errors.endDate = 'Effective End Date is required.';
+    if (!customerId) errors.customerId = 'ID Pelanggan wajib diisi.';
+    if (!salesforceNumber) errors.salesforceNumber = 'Nomor Salesforce wajib diisi.';
+    else if (!/[0-9]/.test(salesforceNumber)) errors.salesforceNumber = 'Nomor Salesforce harus memuat minimal satu angka.';
+    if (!startDate) errors.startDate = 'Tanggal mulai berlaku wajib diisi.';
+    if (!endDate) errors.endDate = 'Tanggal akhir berlaku wajib diisi.';
     if (startDate && endDate && endDate < startDate) {
-      errors.endDate = 'End date cannot be earlier than the start date.';
+      errors.endDate = 'Tanggal akhir tidak boleh lebih awal dari tanggal mulai.';
     }
 
     const completedFields = [customerId, salesforceNumber, startDate, endDate].filter(Boolean).length;
@@ -60,40 +60,46 @@
     const origin = String(row.origin ?? '').trim();
     const destination = String(row.destination ?? '').trim();
     const serviceId = Number(row.serviceId);
+    const formulaId = namespace.resolveFormulaId(row);
+    const slaDays = toFiniteNumber(row.slaDays);
     const minimumWeight = toFiniteNumber(row.minimumWeight);
     const minimumTariff = toFiniteNumber(row.minimumTariff);
     const incrementWeight = toFiniteNumber(row.incrementWeight);
     const incrementTariff = toFiniteNumber(row.incrementTariff);
     const description = String(row.description ?? '').trim();
 
-    if (!origin) errors.origin = 'Origin is required.';
-    else if (!POSTCODE_LIKE_PATTERN.test(origin)) errors.origin = 'Use a postcode-like code with 3–12 letters, digits, or hyphens.';
+    if (!origin) errors.origin = 'Asal wajib diisi.';
+    else if (!POSTCODE_LIKE_PATTERN.test(origin)) errors.origin = 'Gunakan kode 3–12 karakter berupa huruf, angka, atau tanda hubung.';
 
-    if (!destination) errors.destination = 'Destination is required.';
-    else if (!POSTCODE_LIKE_PATTERN.test(destination)) errors.destination = 'Use a postcode-like code with 3–12 letters, digits, or hyphens.';
+    if (!destination) errors.destination = 'Tujuan wajib diisi.';
+    else if (!POSTCODE_LIKE_PATTERN.test(destination)) errors.destination = 'Gunakan kode 3–12 karakter berupa huruf, angka, atau tanda hubung.';
 
-    if (!namespace.getService || !namespace.getService(serviceId)) errors.serviceId = 'Choose a supported service.';
+    if (!namespace.getService || !namespace.getService(serviceId)) errors.serviceId = 'Pilih layanan yang didukung.';
+    if (!Number.isFinite(formulaId)) errors.formulaIdOverride = 'Formula ID otomatis tidak tersedia. Pilih 1644 (PJE) atau layanan lain.';
 
-    if (!Number.isFinite(minimumWeight)) errors.minimumWeight = 'Minimum weight is required.';
-    else if (minimumWeight <= 0) errors.minimumWeight = 'Minimum weight must be greater than zero.';
+    if (!Number.isFinite(slaDays)) errors.slaDays = 'SLA wajib diisi.';
+    else if (!Number.isInteger(slaDays) || slaDays <= 0) errors.slaDays = 'SLA harus berupa hari bulat lebih dari 0.';
 
-    if (!Number.isFinite(minimumTariff)) errors.minimumTariff = 'Minimum tariff is required.';
-    else if (minimumTariff < 0) errors.minimumTariff = 'Minimum tariff must not be negative.';
+    if (!Number.isFinite(minimumWeight)) errors.minimumWeight = 'Berat minimum wajib diisi.';
+    else if (minimumWeight <= 0) errors.minimumWeight = 'Berat minimum harus lebih dari 0.';
 
-    if (!Number.isFinite(incrementWeight)) errors.incrementWeight = 'Increment weight is required.';
-    else if (incrementWeight <= 0) errors.incrementWeight = 'Increment weight must be greater than zero.';
+    if (!Number.isFinite(minimumTariff)) errors.minimumTariff = 'Tarif minimum wajib diisi.';
+    else if (minimumTariff < 0) errors.minimumTariff = 'Tarif minimum tidak boleh negatif.';
 
-    if (!Number.isFinite(incrementTariff)) errors.incrementTariff = 'Increment tariff is required.';
-    else if (incrementTariff < 0) errors.incrementTariff = 'Increment tariff must not be negative.';
+    if (!Number.isFinite(incrementWeight)) errors.incrementWeight = 'Berat kelipatan wajib diisi.';
+    else if (incrementWeight <= 0) errors.incrementWeight = 'Berat kelipatan harus lebih dari 0.';
 
-    if (!description) errors.description = 'Description is required.';
+    if (!Number.isFinite(incrementTariff)) errors.incrementTariff = 'Tarif kelipatan wajib diisi.';
+    else if (incrementTariff < 0) errors.incrementTariff = 'Tarif kelipatan tidak boleh negatif.';
+
+    if (!description) errors.description = 'Deskripsi wajib diisi.';
 
     let duplicate = false;
     if (origin && destination && Number.isFinite(serviceId)) {
       const key = `${origin.toUpperCase()}|${destination.toUpperCase()}|${serviceId}`;
       const matches = duplicateMap.get(key) || [];
       duplicate = matches.length > 1;
-      if (duplicate) warnings.push('Duplicate origin–destination–service combination.');
+      if (duplicate) warnings.push('Kombinasi asal–tujuan–layanan duplikat.');
     }
 
     if (row.importNeedsReview && row.importReviewMessage) warnings.push(row.importReviewMessage);
@@ -107,7 +113,7 @@
     return {
       rowId: row.id,
       status,
-      statusLabel: status === 'ready' ? 'Ready' : status === 'needs-review' ? 'Needs Review' : status === 'invalid' ? 'Invalid' : 'Incomplete',
+      statusLabel: status === 'ready' ? 'Siap' : status === 'needs-review' ? 'Perlu Ditinjau' : status === 'invalid' ? 'Tidak Valid' : 'Belum Lengkap',
       errors,
       warnings,
       duplicate,
@@ -116,6 +122,8 @@
         origin,
         destination,
         serviceId,
+        formulaId,
+        slaDays,
         minimumWeight,
         minimumTariff,
         incrementWeight,
