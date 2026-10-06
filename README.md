@@ -102,7 +102,7 @@ Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
 4. Pastikan custom domain `tarif.posnew.com` telah terpasang.
 5. Folder `functions/` harus ikut diunggah. Middleware akan mengalihkan `tarifmile.pages.dev` ke `tarif.posnew.com` sambil mempertahankan path dan query.
 
-HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261006-201`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
+HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261006-202`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
 
 ## Pengujian
 
