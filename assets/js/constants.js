@@ -3,7 +3,7 @@
 
   const namespace = root.TariffBuilder || {};
 
-  const APP_VERSION = '2.0.0';
+  const APP_VERSION = '2.0.1';
   const PJE_FORMULA_ID = 1644;
 
   // Formula ID mengikuti tabel referensi operasional yang diberikan pada
@@ -59,6 +59,7 @@
 
   const DEFAULTS = Object.freeze({
     serviceId: 420,
+    formulaIdOverride: PJE_FORMULA_ID,
     minimumWeight: 1000,
     incrementWeight: 1000,
     disableTariff: 0,
@@ -79,7 +80,7 @@
       origin: String(source.origin ?? ''),
       destination: String(source.destination ?? ''),
       serviceId: Number(source.serviceId ?? DEFAULTS.serviceId),
-      formulaIdOverride: source.formulaIdOverride ?? '',
+      formulaIdOverride: source.formulaIdOverride ?? DEFAULTS.formulaIdOverride,
       slaDays: source.slaDays ?? '',
       minimumWeight: source.minimumWeight ?? DEFAULTS.minimumWeight,
       minimumTariff: source.minimumTariff ?? '',

@@ -1,6 +1,6 @@
 # Pembuat Tarif Negotiable MILE
 
-Versi **2.0.0** adalah aplikasi web statis berbahasa Indonesia untuk mengimpor rute tarif, memvalidasi data, dan membuat workbook `TariffCustomer` yang siap digunakan pada MILE.
+Versi **2.0.1** adalah aplikasi web statis berbahasa Indonesia untuk mengimpor rute tarif, memvalidasi data, dan membuat workbook `TariffCustomer` yang siap digunakan pada MILE.
 
 > Aplikasi ini dikembangkan secara independen dan tidak boleh dinyatakan sebagai aplikasi resmi Pos Indonesia tanpa otorisasi tertulis.
 
@@ -38,7 +38,7 @@ ID Pelanggan diubah menjadi huruf besar hanya saat ekspor. Nilai Salesforce asli
 ## Nilai per rute
 
 - Layanan: default PKH (`420`)
-- Formula ID: otomatis mengikuti layanan
+- Formula ID: default `1644` (`PJE`); opsi otomatis mengikuti layanan
 - Opsi manual Formula ID: `1644` (`PJE`)
 - SLA: wajib diisi pengguna dalam hari bulat lebih dari `0`
 - SLA jam: otomatis dihitung `hari × 24`
@@ -66,7 +66,7 @@ Layanan dan Formula ID otomatis:
 | VG | 465 | 1677 |
 | 3PE, Q23, Q13, 3LX, 3LP, 332, 331, 312, 311, 010 | 464–455 | 1648 |
 
-Untuk KBM, Formula ID otomatis tidak tersedia karena tabel referensi menampilkan tanda `-`. Ekspor akan ditahan sampai pengguna memilih override `1644 (PJE)` atau mengganti layanan.
+Untuk KBM, Formula ID otomatis tidak tersedia karena tabel referensi menampilkan tanda `-`. Jika opsi otomatis dipilih, ekspor akan ditahan sampai pengguna memilih `1644 (PJE)` atau mengganti layanan.
 
 ## Formula JSON
 
@@ -102,7 +102,7 @@ Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
 4. Pastikan custom domain `tarif.posnew.com` telah terpasang.
 5. Folder `functions/` harus ikut diunggah. Middleware akan mengalihkan `tarifmile.pages.dev` ke `tarif.posnew.com` sambil mempertahankan path dan query.
 
-HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20260814-200`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
+HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261006-201`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
 
 ## Pengujian
 

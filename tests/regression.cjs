@@ -39,7 +39,7 @@ test('default row constants remain exact', () => {
   assert.equal(row.minimumWeight, 1000);
   assert.equal(row.incrementWeight, 1000);
   assert.equal(row.slaDays, '');
-  assert.equal(row.formulaIdOverride, '');
+  assert.equal(row.formulaIdOverride, 1644);
 });
 
 test('output headers and order remain exact', () => {
@@ -179,7 +179,7 @@ test('export record preserves raw Salesforce and uppercase export behavior', () 
 });
 
 test('filename and worksheet constants remain exact', () => {
-  assert.equal(T.APP_VERSION, '2.0.0');
+  assert.equal(T.APP_VERSION, '2.0.1');
   assert.equal(T.DEFAULTS.worksheetName, 'TariffCustomer');
   assert.equal(T.getOutputFilename('914372'), 'Tarif_Negotiable_914372.xlsx');
 });

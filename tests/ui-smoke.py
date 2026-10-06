@@ -74,7 +74,7 @@ with sync_playwright() as p:
 
     check(page.title() == 'Pembuat Tarif Negotiable MILE | PosNew Hub', 'Unexpected page title')
     check(page.locator('html').get_attribute('lang') == 'id', 'HTML language is not Indonesian')
-    check(page.locator('#appVersion').text_content() == 'Versi 2.0.0', 'Visible application version is missing')
+    check(page.locator('#appVersion').text_content() == 'Versi 2.0.1', 'Visible application version is missing')
     check(page.locator('#tariffTableBody tr').count() == 1, 'Initial row missing')
     check(page.locator('#exportButton').is_disabled(), 'Export should start disabled')
     check(page.locator('body').evaluate('(el)=>el.scrollWidth <= el.clientWidth'), 'Desktop page has horizontal overflow')

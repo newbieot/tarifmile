@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-06 — Versi 2.0.1
+
+### Diubah
+
+- Formula ID default untuk rute baru dan hasil impor menjadi `1644 (PJE)`; pilihan otomatis per layanan tetap tersedia.
+- Cache key aset berubah menjadi `20261006-201`.
+
 ## 2026-08-14 — Versi 2.0.0
 
 ### Ditambahkan
