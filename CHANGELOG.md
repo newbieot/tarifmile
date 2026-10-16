@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-16
+
+- Impor format kodepos zona, termasuk header multibaris pada workbook tarif MA Provinsi KEPRI.
+- Kodepos asal dan tujuan memakai `KODEPOS ASAL ZONA` dan `KODEPOS TUJUAN ZONA`.
+- Pilihan tarif sebelum impor: REGULER untuk PKH (`420`), NEXTDAY untuk PE (`411`).
+- Duplikat zona dengan tarif berbeda ditandai dan memerlukan pengisian ulang tarif sebelum ekspor.
+- Pembacaan workbook memakai penyimpanan sel padat dan daftar duplikat hanya menampilkan pasangan rute unik untuk file besar.
+- Cache key aset berubah menjadi `20261016-203`.
+
 ## 2026-10-06 — Versi 2.0.1
 
 ### Diubah

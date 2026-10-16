@@ -190,6 +190,38 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('#selectedFileName').textContent === 'dropped-tariff.csv'")
     check(page.locator('#importedMetric').text_content() == '3', 'Drag-and-drop import failed')
 
+    # Zone postcodes and the user's REGULER=PKH / NEXTDAY=PE mapping.
+    page.evaluate("""window.XLSX._nextRows = [
+      [],
+      ['NO', 'KODEPOS\\nASAL', 'KODEPOS ASAL ZONA', 'KODEPOS\\nTUJUAN', 'KODEPOS TUJUAN ZONA',
+       'TARIF (Rp)\\nREGULER\\nPER KG (TERBARU)', 'TARIF (Rp)\\nNEXTDAY\\nPER KG (TERBARU)', 'Layanan', 'Layanan'],
+      [1, 29411, 29400, 10110, 10000, 32400, 55200, 'PE', 'PKH'],
+      [2, 29411, 29400, 10120, 10000, 32400, 55200, 'PE', 'PKH'],
+      [3, 29411, 29400, 14530, 14530, 44400, 0, 'PE', 'PKH']
+    ]""")
+    page.set_viewport_size({'width': 1440, 'height': 1000})
+    for tariff_type, service_id, tariff, description in [('reguler', '420', '32400', 'PKH'), ('nextday', '411', '55200', 'PE')]:
+        page.select_option('#importTariffType', tariff_type)
+        page.set_input_files('#fileInput', str(xlsx))
+        page.wait_for_function("([price,service]) => { const first = document.querySelector('#tariffTableBody tr'); return document.querySelector('#importedMetric').textContent === '2' && first.querySelector('[data-field=minimumTariff]').value === price && first.querySelector('[data-field=serviceId]').value === service; }", arg=[tariff, service_id])
+        first = page.locator('#tariffTableBody tr').first
+        check(first.locator('[data-field="origin"]').input_value() == '29400', 'Zone origin column was not used')
+        check(first.locator('[data-field="destination"]').input_value() == '10000', 'Zone destination column was not used')
+        check(first.locator('[data-field="description"]').input_value() == description, 'Zone description did not follow selected service')
+        check(first.locator('[data-field="incrementTariff"]').input_value() == tariff, 'Zone increment tariff mismatch')
+        check(page.locator('#duplicatesMetric').text_content() == '1', 'Zone duplicate count mismatch')
+        check(f'Tarif {tariff_type.upper()}' in page.locator('#importSummaryText').text_content(), 'Selected tariff source missing from summary')
+    check(page.locator('#tariffTableBody tr').last.locator('[data-field="minimumTariff"]').input_value() == '0', 'NEXTDAY zero tariff was not preserved')
+
+    # A conflicting tariff for the same zone must require manual correction.
+    page.evaluate('window.XLSX._nextRows[3][6] = 60000')
+    page.set_input_files('#fileInput', str(xlsx))
+    page.wait_for_function("document.querySelector('#reviewMetric').textContent === '1'")
+    check(page.locator('#tariffTableBody tr').first.locator('[data-field="minimumTariff"]').input_value() == '', 'Conflicting minimum tariff was chosen silently')
+    check(page.locator('#tariffTableBody tr').first.locator('[data-field="incrementTariff"]').input_value() == '', 'Conflicting increment tariff was chosen silently')
+    check('tarif berbeda' in page.locator('#importSummaryText').text_content(), 'Zone tariff conflict summary missing')
+    check(page.locator('#exportButton').is_disabled(), 'Unresolved zone tariffs must prevent export')
+
     page.emulate_media(reduced_motion='reduce')
     check(page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches"), 'Reduced-motion mode was not recognized')
     check(not page_errors, 'Browser page errors: ' + '; '.join(page_errors))

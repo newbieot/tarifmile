@@ -6,6 +6,15 @@ require('../assets/js/importer.js');
 require('../assets/js/validation.js');
 require('../assets/js/export.js');
 const T = globalThis.TariffBuilder;
+const ZONE_SOURCE_ROWS = [
+  [],
+  ['NO', 'KODEPOS\nASAL', 'KODEPOS ASAL ZONA', 'KODEPOS\nTUJUAN', 'KODEPOS TUJUAN ZONA',
+    'TARIF (Rp)\nREGULER\nPER KG (TERBARU)', 'TARIF (Rp)\nNEXTDAY\nPER KG (TERBARU)',
+    'ID PELANGGAN', 'Layanan', 'Kode Salesforce PE', 'Layanan', 'Kode Salesforce PKH'],
+  [1, 29411, 29400, 10110, 10000, 32400, 55200, 'CUSTOMER', 'PE', 897924, 'PKH', 898845],
+  [2, 29411, 29400, 10120, 10000, 32400, 55200, 'CUSTOMER', 'PE', 897924, 'PKH', 898845],
+  [3, 29411, 29400, 14530, 14530, 44400, 0, 'CUSTOMER', 'PE', 897924, 'PKH', 898845]
+];
 
 let passed = 0;
 function test(name, fn) {
@@ -125,6 +134,118 @@ test('source import deduplicates routes and fills both tariff fields', () => {
   assert.equal(parsed.rows[1].importNeedsReview, true);
 });
 
+test('KEPRI REGULER import uses zone postcodes, PKH, and the regular tariff', () => {
+  const parsed = T.parseSourceRows(ZONE_SOURCE_ROWS);
+  assert.equal(parsed.header.rowIndex, 1);
+  assert.equal(parsed.header.format, 'zone');
+  assert.equal(parsed.header.indexes.tariff, 5);
+  assert.equal(parsed.rows.length, 2);
+  assert.equal(parsed.rows[0].origin, '29400');
+  assert.equal(parsed.rows[0].destination, '10000');
+  assert.equal(parsed.rows[0].minimumTariff, 32400);
+  assert.equal(parsed.rows[0].incrementTariff, 32400);
+  assert.equal(parsed.rows[0].serviceId, 420);
+  assert.equal(parsed.rows[0].description, 'PKH');
+  assert.equal(parsed.rows[0].sourceRowNumber, 3);
+  assert.equal(parsed.rows[0].importNeedsReview, false);
+  assert.equal(parsed.summary.duplicatesSkipped, 1);
+  assert.deepEqual(parsed.summary.duplicateRoutes, ['29400|10000']);
+});
+
+test('KEPRI NEXTDAY import uses PE and preserves zero tariffs', () => {
+  const parsed = T.parseSourceRows(ZONE_SOURCE_ROWS, { tariffType: 'nextday' });
+  assert.equal(parsed.header.indexes.tariff, 6);
+  assert.equal(parsed.rows[0].minimumTariff, 55200);
+  assert.equal(parsed.rows[0].incrementTariff, 55200);
+  assert.equal(parsed.rows[0].serviceId, 411);
+  assert.equal(parsed.rows[0].description, 'PE');
+  assert.equal(parsed.rows[1].minimumTariff, 0);
+  assert.equal(parsed.rows[1].importNeedsReview, false);
+});
+
+test('zone columns take precedence over regular postcodes and RUTE KANTOR', () => {
+  const parsed = T.parseSourceRows([
+    ['RUTE KANTOR', 'KODEPOS ASAL', ' kodepos\n asal zona ', 'KODEPOS TUJUAN', ' kodepos tujuan   zona ', 'TARIF', 'Layanan'],
+    ['99999|88888', 29411, ' 01234 ', 10110, ' 00110 ', 'Rp 12.500', 'CONTRACT'],
+    ['', 29412, '01234', 10120, '00110', 12500, 'CONTRACT']
+  ]);
+  assert.equal(parsed.rows.length, 1);
+  assert.equal(parsed.rows[0].origin, '01234');
+  assert.equal(parsed.rows[0].destination, '00110');
+  assert.equal(parsed.rows[0].minimumTariff, 12500);
+  assert.equal(parsed.summary.duplicatesSkipped, 1);
+});
+
+test('incomplete zone routes remain visible for correction without falling back', () => {
+  const parsed = T.parseSourceRows([
+    ['RUTE KANTOR', 'KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF', 'Layanan'],
+    ['29411|10110', '29400', '', 10000, 'PKH'],
+    ['29411|10120', '', '10000', 10000, 'PKH'],
+    ['29411|10130', '', '', 10000, 'PKH']
+  ]);
+  assert.equal(parsed.rows.length, 2);
+  assert.equal(parsed.rows[0].destination, '');
+  assert.equal(parsed.rows[1].origin, '');
+  assert.equal(parsed.summary.rowsRequiringReview, 2);
+  assert.equal(parsed.summary.emptyRowsSkipped, 1);
+  assert.match(parsed.rows[0].importReviewMessage, /tujuan zona kosong/);
+});
+
+test('conflicting zone tariffs require manual tariff values before export', () => {
+  const parsed = T.parseSourceRows([
+    ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF', 'Layanan'],
+    [29400, 10000, 10000, 'PKH'],
+    [29400, 10000, 12000, 'PKH'],
+    [29400, 10000, 13000, 'PKH'],
+    [29400, 10000, 10000, 'PKH']
+  ]);
+  const row = parsed.rows[0];
+  const globals = { customerId:'ABC', salesforceNumber:'914372', startDate:'2026-01-01', endDate:'2026-12-31' };
+  row.slaDays = 3;
+  assert.equal(parsed.summary.conflictingTariffRoutes, 1);
+  assert.equal(parsed.summary.rowsRequiringReview, 1);
+  assert.equal(parsed.summary.duplicatesSkipped, 3);
+  assert.equal(parsed.summary.duplicateRoutes.length, 1);
+  assert.equal(row.minimumTariff, '');
+  assert.equal(row.incrementTariff, '');
+  assert.match(row.importReviewMessage, /baris 2 \(10000\) dan 3 \(12000\)/);
+  assert.equal(T.validateWorkspace(globals, [row]).exportable, false);
+  row.minimumTariff = 12000;
+  row.incrementTariff = 12000;
+  assert.equal(T.validateWorkspace(globals, [row]).exportable, true);
+});
+
+test('zone tariff conflicts only concern the selected tariff column', () => {
+  const changed = ZONE_SOURCE_ROWS.map((row) => row.slice());
+  changed[3][6] = 60000;
+  assert.equal(T.parseSourceRows(changed).summary.conflictingTariffRoutes, 0);
+  assert.equal(T.parseSourceRows(changed, { tariffType: 'nextday' }).summary.conflictingTariffRoutes, 1);
+});
+
+test('a missing selected tariff column never silently uses the other tariff', () => {
+  const source = [
+    ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER'],
+    [29400, 10000, 10000]
+  ];
+  assert.equal(T.parseSourceRows(source).rows[0].minimumTariff, 10000);
+  assert.throws(() => T.parseSourceRows(source, { tariffType: 'nextday' }), (error) => error.code === 'MISSING_HEADERS');
+  assert.throws(() => T.parseSourceRows(source, { tariffType: 'other' }), (error) => error.code === 'INVALID_TARIFF_TYPE');
+});
+
+test('the selected zone tariff exports its mapped service and zone codes', () => {
+  for (const [tariffType, serviceId, tariff, description] of [['reguler', 420, 32400, 'PKH'], ['nextday', 411, 55200, 'PE']]) {
+    const row = T.parseSourceRows(ZONE_SOURCE_ROWS, { tariffType }).rows[0];
+    row.slaDays = 2;
+    const record = T.buildExportRecord({ customerId:'ABC', salesforceNumber:'914372', startDate:'2026-01-01', endDate:'2026-12-31' }, row);
+    assert.equal(record.tariff_from_code, '29400');
+    assert.equal(record.tariff_to_code, '10000');
+    assert.equal(record.service_id, serviceId);
+    assert.equal(record.tariff_sub_service_description, description);
+    assert.equal(JSON.parse(record.tariff_formula_data).base_tariff_1, tariff);
+    assert.equal(JSON.parse(record.tariff_formula_data).base_tariff_2, tariff);
+  }
+});
+
 test('global validation checks required values, digits, and date order', () => {
   assert.equal(T.validateGlobalFields({}).valid, false);
   assert.match(T.validateGlobalFields({ customerId:'A', salesforceNumber:'ABC', startDate:'2026-01-02', endDate:'2026-01-01' }).errors.salesforceNumber, /minimal satu angka/);
@@ -160,7 +281,7 @@ test('invalid formula numbers are rejected', () => {
 
 test('export record preserves raw Salesforce and uppercase export behavior', () => {
   const row = T.createDefaultRow({
-    origin:'01234', destination:'00110', serviceId:411, slaDays:2, minimumWeight:1000,
+    origin:'01234', destination:'00110', serviceId:411, formulaIdOverride:'', slaDays:2, minimumWeight:1000,
     minimumTariff:10000, incrementWeight:1000, incrementTariff:10000,
     description:'  express tariff  '
   });

@@ -27,7 +27,7 @@
   <meta name="twitter:description" content="Impor, validasi, dan ekspor workbook tarif negotiable siap MILE langsung di browser.">
   <meta name="twitter:image" content="https://tarif.posnew.com/og-cover.png">
   <link rel="preconnect" href="https://cdn.sheetjs.com" crossorigin>
-  <link rel="stylesheet" href="/assets/css/app.css?v=20261006-202">
+  <link rel="stylesheet" href="/assets/css/app.css?v=20261016-203">
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -129,6 +129,15 @@
         <section class="panel-card upload-card" aria-labelledby="importTitle">
           <div class="panel-heading">
             <div><span class="section-index">02</span><div><h2 id="importTitle">Impor Rute Tarif</h2><p>Gunakan lembar kerja pertama dari Excel atau impor data CSV.</p></div></div>
+          </div>
+
+          <div class="form-group import-options">
+            <label for="importTariffType">Tarif pada format zona</label>
+            <select id="importTariffType" aria-describedby="importTariffTypeHelp">
+              <option value="reguler">REGULER — PKH</option>
+              <option value="nextday">NEXTDAY — PE</option>
+            </select>
+            <small class="field-hint" id="importTariffTypeHelp">Pilih sebelum mengunggah file format zona. Kodepos diambil dari KODEPOS ASAL ZONA dan KODEPOS TUJUAN ZONA.</small>
           </div>
 
           <button class="dropzone-area" id="dropzone" type="button" aria-describedby="uploadHelp">
@@ -298,11 +307,11 @@
       <div class="dialog-heading"><span class="dialog-icon" aria-hidden="true">?</span><div><h2 id="helpDialogTitle">Cara menyiapkan workbook tarif</h2><p>Ikuti empat tahap berikut tanpa meninggalkan halaman ini.</p></div></div>
       <ol class="help-list">
         <li><strong>Isi Data Pelanggan</strong><span>Masukkan ID Pelanggan, Nomor Salesforce, dan periode berlaku.</span></li>
-        <li><strong>Impor Rute Tarif</strong><span>Gunakan XLSX, XLS, atau CSV dengan header RUTE KANTOR, TARIF, dan Layanan. Contoh Excel tersedia di panel impor.</span></li>
+        <li><strong>Impor Rute Tarif</strong><span>Gunakan XLSX, XLS, atau CSV dengan header RUTE KANTOR, TARIF, dan Layanan, atau format KODEPOS ASAL ZONA dan KODEPOS TUJUAN ZONA. Untuk format zona, pilih REGULER (PKH) atau NEXTDAY (PE) sebelum memilih file. Contoh Excel tersedia di panel impor.</span></li>
         <li><strong>Tinjau dan Validasi</strong><span>Pilih layanan, periksa Formula ID, isi SLA hari, dan selesaikan data tidak lengkap atau duplikat.</span></li>
         <li><strong>Ekspor Workbook</strong><span>Konfirmasi ringkasan lalu unduh lembar kerja TariffCustomer.</span></li>
       </ol>
-      <div class="dialog-note"><strong>Format rute</strong><span>Gunakan ASAL|TUJUAN, contoh 29400|10110.</span></div>
+      <div class="dialog-note"><strong>Format rute</strong><span>Gunakan ASAL|TUJUAN, contoh 29400|10110. Pada format zona, asal dan tujuan dibaca langsung dari kolom kodepos zona.</span></div>
       <div class="dialog-actions"><button class="button button--primary" value="close">Mengerti</button></div>
     </form>
   </dialog>
@@ -336,10 +345,10 @@
 
   <noscript><div class="noscript-message">JavaScript harus diaktifkan untuk menggunakan Pembuat Tarif Negotiable.</div></noscript>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
-  <script src="/assets/js/constants.js?v=20261006-202" defer></script>
-  <script src="/assets/js/importer.js?v=20261006-202" defer></script>
-  <script src="/assets/js/validation.js?v=20261006-202" defer></script>
-  <script src="/assets/js/export.js?v=20261006-202" defer></script>
-  <script src="/assets/js/app.js?v=20261006-202" defer></script>
+  <script src="/assets/js/constants.js?v=20261016-203" defer></script>
+  <script src="/assets/js/importer.js?v=20261016-203" defer></script>
+  <script src="/assets/js/validation.js?v=20261016-203" defer></script>
+  <script src="/assets/js/export.js?v=20261016-203" defer></script>
+  <script src="/assets/js/app.js?v=20261016-203" defer></script>
 </body>
 </html>

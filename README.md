@@ -10,7 +10,9 @@ File diproses secara lokal di browser. Data tarif tidak diunggah ke server, tida
 
 ## Format file impor
 
-Format yang didukung: `.xlsx`, `.xls`, dan `.csv`. Hanya lembar kerja pertama yang dibaca. Importer mencari tiga header berikut pada baris yang sama:
+Format yang didukung: `.xlsx`, `.xls`, dan `.csv`. Hanya lembar kerja pertama yang dibaca. Header boleh berada setelah baris judul, menggunakan huruf besar/kecil atau pemisah baris di dalam sel.
+
+Format rute standar memakai tiga header berikut pada baris yang sama:
 
 - `RUTE KANTOR`
 - `TARIF`
@@ -23,6 +25,17 @@ assets/templates/Contoh_Import_Tarif_Route_v2.0.0.xlsx
 ```
 
 Nilai `TARIF` hasil impor mengisi Tarif Minimum dan Tarif Kelipatan. Rute duplikat berdasarkan nilai `RUTE KANTOR` dilewati.
+
+Format zona, termasuk workbook tarif MA Provinsi KEPRI, juga didukung:
+
+- Kodepos Asal dibaca dari `KODEPOS ASAL ZONA`.
+- Kodepos Tujuan dibaca dari `KODEPOS TUJUAN ZONA`.
+- Pilih **REGULER — PKH** atau **NEXTDAY — PE** di panel impor sebelum memilih atau menjatuhkan file. Kolom `TARIF (Rp) REGULER PER KG (TERBARU)` atau `TARIF (Rp) NEXTDAY PER KG (TERBARU)` mengisi Tarif Minimum dan Tarif Kelipatan. Layanan dan deskripsi mengikuti pilihan tersebut: REGULER menjadi PKH (`420`), NEXTDAY menjadi PE (`411`).
+- Format zona dengan kolom `TARIF` dan `Layanan` juga diterima. Pilihan REGULER/NEXTDAY hanya berlaku untuk kolom tarif yang memiliki nama jenis tarif tersebut.
+- Kolom kodepos zona diprioritaskan meskipun file juga memiliki `KODEPOS ASAL`, `KODEPOS TUJUAN`, atau `RUTE KANTOR`. Kodepos zona yang kosong harus dilengkapi secara manual.
+- Duplikat digabung berdasarkan pasangan kodepos zona. Jika tarif yang dipilih berbeda untuk pasangan zona yang sama, Tarif Minimum dan Tarif Kelipatan dikosongkan serta diberi pesan berisi baris sumber yang berbeda. Isi kembali kedua tarif sebelum ekspor.
+
+Pilihan tarif diterapkan saat impor; mengubah pilihan setelah impor tidak mengubah baris yang sudah diedit. Data pelanggan dan Nomor Salesforce tetap diisi melalui formulir pelanggan.
 
 ## Data pelanggan
 
@@ -102,7 +115,7 @@ Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
 4. Pastikan custom domain `tarif.posnew.com` telah terpasang.
 5. Folder `functions/` harus ikut diunggah. Middleware akan mengalihkan `tarifmile.pages.dev` ke `tarif.posnew.com` sambil mempertahankan path dan query.
 
-HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261006-202`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
+HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261016-203`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
 
 ## Pengujian
 

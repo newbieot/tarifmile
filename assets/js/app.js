@@ -24,7 +24,7 @@
       'customerId', 'salesforceNumber', 'startDate', 'endDate', 'setupCompletion',
       'customerError', 'salesforceError', 'startError', 'endError',
       'fieldGroupCustomer', 'fieldGroupSalesforce', 'fieldGroupStart', 'fieldGroupEnd',
-      'dropzone', 'fileInput', 'fileCard', 'selectedFileName', 'selectedFileMeta', 'selectedFileStatus',
+      'dropzone', 'fileInput', 'importTariffType', 'fileCard', 'selectedFileName', 'selectedFileMeta', 'selectedFileStatus',
       'replaceFileButton', 'removeFileButton', 'progressBox', 'progressTitle', 'progressDetail',
       'importMessage', 'importSummary', 'sourceRowsMetric', 'importedMetric', 'duplicatesMetric',
       'reviewMetric', 'importSummaryText', 'toggleDuplicatesButton', 'duplicateList',
@@ -604,7 +604,11 @@
     dom.duplicatesMetric.textContent = summary.duplicatesSkipped;
     dom.reviewMetric.textContent = summary.rowsRequiringReview;
     const skipped = summary.duplicatesSkipped + summary.emptyRowsSkipped;
-    dom.importSummaryText.textContent = `${summary.routesImported} rute tarif diimpor. ${summary.duplicatesSkipped} duplikat dan ${summary.emptyRowsSkipped} baris kosong dilewati.${skipped === 0 ? ' Tidak ada baris sumber yang dilewati.' : ''}`;
+    const sourceNote = summary.sourceFormat === 'zone' ? ' Kodepos asal dan tujuan memakai kolom zona.' : '';
+    const tariffSource = T.ZONE_TARIFF_TYPES[summary.tariffType];
+    const tariffNote = tariffSource ? ` Tarif ${tariffSource.label} untuk layanan ${tariffSource.serviceName}.` : '';
+    const conflictNote = summary.conflictingTariffRoutes ? ` ${summary.conflictingTariffRoutes} rute zona memiliki tarif berbeda; isi kembali tarifnya sebelum ekspor.` : '';
+    dom.importSummaryText.textContent = `${summary.routesImported} rute tarif diimpor. ${summary.duplicatesSkipped} duplikat dan ${summary.emptyRowsSkipped} baris kosong dilewati.${skipped === 0 ? ' Tidak ada baris sumber yang dilewati.' : ''}${sourceNote}${tariffNote}${conflictNote}`;
     dom.toggleDuplicatesButton.hidden = summary.duplicateRoutes.length === 0;
     dom.duplicateList.hidden = true;
     dom.duplicateList.replaceChildren();
@@ -624,6 +628,7 @@
     }
     if (state.processing) return;
     state.processing = true;
+    dom.importTariffType.disabled = true;
     clearGenerated();
     renderFileCard(file, 'Menunggu diproses');
     setImportMessage('', '');
@@ -631,7 +636,7 @@
     refresh();
 
     try {
-      const result = await T.readWorkbookFile(file, (title, detail) => setProgress(title, detail, true));
+      const result = await T.readWorkbookFile(file, (title, detail) => setProgress(title, detail, true), { tariffType: dom.importTariffType.value });
       setProgress('Memvalidasi data', 'Memeriksa rute impor dan nilai tarif…', true);
       state.rows = result.rows;
       state.rows[0].expanded = true;
@@ -646,6 +651,7 @@
       showToast(error && error.message ? error.message : 'Impor gagal.', 'error');
     } finally {
       state.processing = false;
+      dom.importTariffType.disabled = false;
       setProgress('', '', false);
       dom.fileInput.value = '';
       refresh({ renderRows: true });
@@ -676,6 +682,7 @@
     dom.salesforceNumber.value = '';
     dom.startDate.value = '';
     dom.endDate.value = '';
+    dom.importTariffType.value = 'reguler';
     state.selectedFile = null;
     renderFileCard(null);
     setImportMessage('', '');
