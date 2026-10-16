@@ -135,7 +135,7 @@ test('source import deduplicates routes and fills both tariff fields', () => {
 });
 
 test('KEPRI REGULER import uses zone postcodes, PKH, and the regular tariff', () => {
-  const parsed = T.parseSourceRows(ZONE_SOURCE_ROWS);
+  const parsed = T.parseSourceRows(ZONE_SOURCE_ROWS, { tariffType: 'reguler' });
   assert.equal(parsed.header.rowIndex, 1);
   assert.equal(parsed.header.format, 'zone');
   assert.equal(parsed.header.indexes.tariff, 5);
@@ -145,6 +145,7 @@ test('KEPRI REGULER import uses zone postcodes, PKH, and the regular tariff', ()
   assert.equal(parsed.rows[0].minimumTariff, 32400);
   assert.equal(parsed.rows[0].incrementTariff, 32400);
   assert.equal(parsed.rows[0].serviceId, 420);
+  assert.equal(parsed.rows[0].slaDays, 4);
   assert.equal(parsed.rows[0].description, 'PKH');
   assert.equal(parsed.rows[0].sourceRowNumber, 3);
   assert.equal(parsed.rows[0].importNeedsReview, false);
@@ -158,6 +159,7 @@ test('KEPRI NEXTDAY import uses PE and preserves zero tariffs', () => {
   assert.equal(parsed.rows[0].minimumTariff, 55200);
   assert.equal(parsed.rows[0].incrementTariff, 55200);
   assert.equal(parsed.rows[0].serviceId, 411);
+  assert.equal(parsed.rows[0].slaDays, 2);
   assert.equal(parsed.rows[0].description, 'PE');
   assert.equal(parsed.rows[1].minimumTariff, 0);
   assert.equal(parsed.rows[1].importNeedsReview, false);
@@ -218,7 +220,7 @@ test('conflicting zone tariffs require manual tariff values before export', () =
 test('zone tariff conflicts only concern the selected tariff column', () => {
   const changed = ZONE_SOURCE_ROWS.map((row) => row.slice());
   changed[3][6] = 60000;
-  assert.equal(T.parseSourceRows(changed).summary.conflictingTariffRoutes, 0);
+  assert.equal(T.parseSourceRows(changed, { tariffType: 'reguler' }).summary.conflictingTariffRoutes, 0);
   assert.equal(T.parseSourceRows(changed, { tariffType: 'nextday' }).summary.conflictingTariffRoutes, 1);
 });
 
@@ -244,6 +246,89 @@ test('the selected zone tariff exports its mapped service and zone codes', () =>
     assert.equal(JSON.parse(record.tariff_formula_data).base_tariff_1, tariff);
     assert.equal(JSON.parse(record.tariff_formula_data).base_tariff_2, tariff);
   }
+});
+
+test('one upload imports both services with customer data, service Salesforce, and fixed dates', () => {
+  const result = T.parseSourceRows(ZONE_SOURCE_ROWS);
+  assert.equal(result.header.tariffType, 'both');
+  assert.equal(result.rows.length, 4);
+  assert.equal(result.summary.sourceRowsFound, 3);
+  assert.equal(result.summary.duplicatesSkipped, 2);
+  assert.deepEqual(result.summary.serviceCounts, { PKH: 2, PE: 2 });
+  assert.deepEqual(result.customerData, {
+    customerId: 'CUSTOMER', startDate: '2026-10-16', endDate: '2029-09-30',
+    salesforceByService: { 420: '898845', 411: '897924' }
+  });
+  assert.deepEqual(result.rows.map((row) => [row.serviceId, row.slaDays]), [[420,4],[411,2],[420,4],[411,2]]);
+  assert.equal(T.validateRows(result.rows).counts.duplicates, 0);
+  assert.equal(T.validateWorkspace(result.customerData, result.rows).exportable, true);
+  assert.equal(T.getWorkspaceFilename(result.customerData, result.rows), 'Tarif_Negotiable_898845_897924.xlsx');
+});
+
+test('mixed service exports preserve their own Salesforce, tariff, SLA, and dates', () => {
+  const result = T.parseSourceRows(ZONE_SOURCE_ROWS);
+  const records = T.buildExportRecords(result.customerData, result.rows);
+  for (const record of records) {
+    const isPkh = record.service_id === 420;
+    assert.equal(record.tariff_sub_service_code, isPkh ? '898845' : '897924');
+    assert.equal(JSON.parse(record.tariff_formula_data).kdlayanan_pelanggan, isPkh ? 898845 : 897924);
+    assert.equal(record.tariff_sla_day, isPkh ? 4 : 2);
+    assert.equal(record.tariff_sla_hours, isPkh ? 96 : 48);
+    assert.equal(record.customer_type_code, 'CUSTOMER');
+    assert.equal(record.expiry_start, '2026-10-16');
+    assert.equal(record.expiry_end, '2029-09-30');
+  }
+  assert.equal(JSON.parse(records[0].tariff_formula_data).base_tariff_1, 32400);
+  assert.equal(JSON.parse(records[1].tariff_formula_data).base_tariff_1, 55200);
+  assert.equal(JSON.parse(records[3].tariff_formula_data).base_tariff_1, 0);
+});
+
+test('Salesforce validation checks each active service and never substitutes PKH for a missing PE code', () => {
+  const result = T.parseSourceRows(ZONE_SOURCE_ROWS);
+  result.customerData.salesforceByService[411] = '';
+  const validation = T.validateWorkspace(result.customerData, result.rows);
+  assert.equal(validation.exportable, false);
+  assert.match(validation.globals.errors.salesforcePe, /wajib/);
+  assert.throws(() => T.buildExportRecords(result.customerData, result.rows), /Salesforce/);
+  result.customerData.salesforceByService[411] = 'invalid';
+  assert.match(T.validateWorkspace(result.customerData, result.rows).globals.errors.salesforcePe, /angka/);
+  result.customerData.salesforceByService[411] = '000123';
+  assert.equal(T.validateWorkspace(result.customerData, result.rows).exportable, true);
+  assert.equal(T.buildExportRecords(result.customerData, result.rows)[1].tariff_sub_service_code, '000123');
+  assert.equal(T.getSalesforceSummary(result.customerData, result.rows), 'PKH: 898845 · PE: 000123');
+});
+
+test('single-service import requires only that service Salesforce', () => {
+  const result = T.parseSourceRows(ZONE_SOURCE_ROWS, { tariffType: 'nextday' });
+  result.customerData.salesforceByService[420] = '';
+  assert.equal(T.validateWorkspace(result.customerData, result.rows).exportable, true);
+  assert.equal(T.getWorkspaceFilename(result.customerData, result.rows), 'Tarif_Negotiable_897924.xlsx');
+});
+
+test('conflicting customer or service Salesforce values are rejected even on duplicate routes', () => {
+  for (const column of [7, 9, 11]) {
+    const source = ZONE_SOURCE_ROWS.map((row) => row.slice());
+    source[3][column] = 'DIFFERENT123';
+    assert.throws(() => T.parseSourceRows(source), (error) => error.code === 'INCONSISTENT_CUSTOMER_DATA');
+  }
+});
+
+test('a tariff conflict only clears the affected service when both are imported', () => {
+  const source = ZONE_SOURCE_ROWS.map((row) => row.slice());
+  source[3][6] = 60000;
+  const result = T.parseSourceRows(source);
+  assert.equal(result.summary.conflictingTariffRoutes, 1);
+  assert.equal(result.rows[0].minimumTariff, 32400);
+  assert.equal(result.rows[1].minimumTariff, '');
+  assert.equal(T.validateWorkspace(result.customerData, result.rows).exportable, false);
+});
+
+test('standard imports can read generic customer columns and receive import dates', () => {
+  const result = T.parseSourceRows([
+    ['RUTE KANTOR', 'TARIF', 'Layanan', 'ID PELANGGAN', 'Nomor Salesforce'],
+    ['01234|00110', 10000, 'PKH', 'customer', '00123']
+  ]);
+  assert.deepEqual(result.customerData, { customerId: 'customer', salesforceNumber: '00123', startDate: '2026-10-16', endDate: '2029-09-30' });
 });
 
 test('global validation checks required values, digits, and date order', () => {

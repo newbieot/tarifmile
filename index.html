@@ -27,7 +27,7 @@
   <meta name="twitter:description" content="Impor, validasi, dan ekspor workbook tarif negotiable siap MILE langsung di browser.">
   <meta name="twitter:image" content="https://tarif.posnew.com/og-cover.png">
   <link rel="preconnect" href="https://cdn.sheetjs.com" crossorigin>
-  <link rel="stylesheet" href="/assets/css/app.css?v=20261016-203">
+  <link rel="stylesheet" href="/assets/css/app.css?v=20261016-204">
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -93,7 +93,7 @@
           <div class="panel-heading panel-heading--status">
             <div>
               <span class="section-index">01</span>
-              <div><h2 id="customerSetupTitle">Data Pelanggan</h2><p>Lengkapi empat kolom sebelum ekspor.</p></div>
+              <div><h2 id="customerSetupTitle">Data Pelanggan</h2><p>Impor Excel untuk mengisi pelanggan, Salesforce, dan tanggal otomatis.</p></div>
             </div>
             <span class="completion-badge" id="setupCompletion">Lengkapi 4 kolom wajib</span>
           </div>
@@ -106,10 +106,16 @@
               <span class="field-error" id="customerError"></span>
             </div>
             <div class="form-group full-width" id="fieldGroupSalesforce">
-              <label for="salesforceNumber">Nomor Salesforce <span>Wajib</span></label>
+              <label for="salesforceNumber" id="salesforceLabel">Nomor Salesforce <span>Wajib</span></label>
               <input id="salesforceNumber" type="text" autocomplete="off" spellcheck="false" inputmode="text" placeholder="Contoh: 914372" aria-describedby="salesforceHelp salesforceError">
               <span class="field-hint" id="salesforceHelp">ID produk atau sublayanan yang digunakan pada workbook hasil ekspor.</span>
               <span class="field-error" id="salesforceError"></span>
+            </div>
+            <div class="form-group full-width" id="fieldGroupSalesforcePe" hidden>
+              <label for="salesforcePe">Nomor Salesforce PE <span>Untuk PE</span></label>
+              <input id="salesforcePe" type="text" autocomplete="off" spellcheck="false" placeholder="Kode Salesforce PE dari Excel" aria-describedby="salesforcePeHelp salesforcePeError">
+              <span class="field-hint" id="salesforcePeHelp">Dibaca dari Kode Salesforce PE; digunakan untuk layanan PE.</span>
+              <span class="field-error" id="salesforcePeError"></span>
             </div>
             <div class="form-group" id="fieldGroupStart">
               <label for="startDate">Tanggal Mulai Berlaku <span>Wajib</span></label>
@@ -134,10 +140,11 @@
           <div class="form-group import-options">
             <label for="importTariffType">Tarif pada format zona</label>
             <select id="importTariffType" aria-describedby="importTariffTypeHelp">
+              <option value="both">PKH dan PE sekaligus (otomatis)</option>
               <option value="reguler">REGULER — PKH</option>
               <option value="nextday">NEXTDAY — PE</option>
             </select>
-            <small class="field-hint" id="importTariffTypeHelp">Pilih sebelum mengunggah file format zona. Kodepos diambil dari KODEPOS ASAL ZONA dan KODEPOS TUJUAN ZONA.</small>
+            <small class="field-hint" id="importTariffTypeHelp">Sekali unggah memuat kedua tarif dari kodepos zona. REGULER = PKH (SLA 4 hari), NEXTDAY = PE (SLA 2 hari). Masa berlaku otomatis 16 Oktober 2026–30 September 2029.</small>
           </div>
 
           <button class="dropzone-area" id="dropzone" type="button" aria-describedby="uploadHelp">
@@ -306,8 +313,8 @@
     <form method="dialog">
       <div class="dialog-heading"><span class="dialog-icon" aria-hidden="true">?</span><div><h2 id="helpDialogTitle">Cara menyiapkan workbook tarif</h2><p>Ikuti empat tahap berikut tanpa meninggalkan halaman ini.</p></div></div>
       <ol class="help-list">
-        <li><strong>Isi Data Pelanggan</strong><span>Masukkan ID Pelanggan, Nomor Salesforce, dan periode berlaku.</span></li>
-        <li><strong>Impor Rute Tarif</strong><span>Gunakan XLSX, XLS, atau CSV dengan header RUTE KANTOR, TARIF, dan Layanan, atau format KODEPOS ASAL ZONA dan KODEPOS TUJUAN ZONA. Untuk format zona, pilih REGULER (PKH) atau NEXTDAY (PE) sebelum memilih file. Contoh Excel tersedia di panel impor.</span></li>
+        <li><strong>Isi Data Pelanggan</strong><span>Saat impor, ID Pelanggan dan kode Salesforce PKH/PE dibaca dari Excel. Masa berlaku diisi 16 Oktober 2026–30 September 2029. Nilainya tetap dapat diedit.</span></li>
+        <li><strong>Impor Rute Tarif</strong><span>Gunakan XLSX, XLS, atau CSV dengan header RUTE KANTOR, TARIF, dan Layanan, atau format KODEPOS ASAL ZONA dan KODEPOS TUJUAN ZONA. Format zona otomatis memuat REGULER untuk PKH (SLA 4 hari) dan NEXTDAY untuk PE (SLA 2 hari) sekaligus.</span></li>
         <li><strong>Tinjau dan Validasi</strong><span>Pilih layanan, periksa Formula ID, isi SLA hari, dan selesaikan data tidak lengkap atau duplikat.</span></li>
         <li><strong>Ekspor Workbook</strong><span>Konfirmasi ringkasan lalu unduh lembar kerja TariffCustomer.</span></li>
       </ol>
@@ -345,10 +352,10 @@
 
   <noscript><div class="noscript-message">JavaScript harus diaktifkan untuk menggunakan Pembuat Tarif Negotiable.</div></noscript>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
-  <script src="/assets/js/constants.js?v=20261016-203" defer></script>
-  <script src="/assets/js/importer.js?v=20261016-203" defer></script>
-  <script src="/assets/js/validation.js?v=20261016-203" defer></script>
-  <script src="/assets/js/export.js?v=20261016-203" defer></script>
-  <script src="/assets/js/app.js?v=20261016-203" defer></script>
+  <script src="/assets/js/constants.js?v=20261016-204" defer></script>
+  <script src="/assets/js/importer.js?v=20261016-204" defer></script>
+  <script src="/assets/js/validation.js?v=20261016-204" defer></script>
+  <script src="/assets/js/export.js?v=20261016-204" defer></script>
+  <script src="/assets/js/app.js?v=20261016-204" defer></script>
 </body>
 </html>

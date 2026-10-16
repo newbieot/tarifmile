@@ -30,30 +30,34 @@ Format zona, termasuk workbook tarif MA Provinsi KEPRI, juga didukung:
 
 - Kodepos Asal dibaca dari `KODEPOS ASAL ZONA`.
 - Kodepos Tujuan dibaca dari `KODEPOS TUJUAN ZONA`.
-- Pilih **REGULER — PKH** atau **NEXTDAY — PE** di panel impor sebelum memilih atau menjatuhkan file. Kolom `TARIF (Rp) REGULER PER KG (TERBARU)` atau `TARIF (Rp) NEXTDAY PER KG (TERBARU)` mengisi Tarif Minimum dan Tarif Kelipatan. Layanan dan deskripsi mengikuti pilihan tersebut: REGULER menjadi PKH (`420`), NEXTDAY menjadi PE (`411`).
+- Pilihan default **PKH dan PE sekaligus (otomatis)** memuat kedua tarif dalam satu unggahan dan satu workbook keluaran. REGULER menjadi PKH (`420`) dengan SLA **4 hari / 96 jam**; NEXTDAY menjadi PE (`411`) dengan SLA **2 hari / 48 jam**. Tarif Minimum dan Tarif Kelipatan diambil dari kolom tarif masing-masing. Pilihan impor satu layanan tetap tersedia.
 - Format zona dengan kolom `TARIF` dan `Layanan` juga diterima. Pilihan REGULER/NEXTDAY hanya berlaku untuk kolom tarif yang memiliki nama jenis tarif tersebut.
 - Kolom kodepos zona diprioritaskan meskipun file juga memiliki `KODEPOS ASAL`, `KODEPOS TUJUAN`, atau `RUTE KANTOR`. Kodepos zona yang kosong harus dilengkapi secara manual.
-- Duplikat digabung berdasarkan pasangan kodepos zona. Jika tarif yang dipilih berbeda untuk pasangan zona yang sama, Tarif Minimum dan Tarif Kelipatan dikosongkan serta diberi pesan berisi baris sumber yang berbeda. Isi kembali kedua tarif sebelum ekspor.
+- Duplikat digabung berdasarkan pasangan kodepos zona **dan layanan**, sehingga PKH dan PE untuk zona yang sama tetap menjadi dua baris. Jika tarif berbeda untuk zona dan layanan yang sama, Tarif Minimum dan Tarif Kelipatan pada layanan tersebut dikosongkan serta diberi pesan berisi baris sumber. Isi kembali kedua tarif sebelum ekspor.
 
-Pilihan tarif diterapkan saat impor; mengubah pilihan setelah impor tidak mengubah baris yang sudah diedit. Data pelanggan dan Nomor Salesforce tetap diisi melalui formulir pelanggan.
+Pilihan tarif diterapkan saat impor; mengubah pilihan setelah impor tidak mengubah baris yang sudah diedit.
 
 ## Data pelanggan
 
-Empat nilai global wajib diisi:
+Data berikut harus lengkap sebelum ekspor dan tetap dapat diedit melalui formulir:
 
 - ID Pelanggan
-- Nomor Salesforce
+- Nomor Salesforce setiap layanan yang dipakai
 - Tanggal Mulai Berlaku
 - Tanggal Akhir Berlaku
 
-ID Pelanggan diubah menjadi huruf besar hanya saat ekspor. Nilai Salesforce asli dipertahankan untuk nama file dan `tariff_sub_service_code`; bentuk numeriknya dipakai pada `kdlayanan_pelanggan`.
+Saat impor, `ID PELANGGAN`, `Kode Salesforce PKH`, dan `Kode Salesforce PE` otomatis mengisi formulir. Kedua Salesforce ditampilkan terpisah dan digunakan sesuai layanan pada setiap baris, termasuk pada JSON `kdlayanan_pelanggan` dan `tariff_sub_service_code`. Format standar juga menerima kolom `Nomor Salesforce` atau `Kode Salesforce`.
+
+Setiap impor mengisi tanggal mulai **16 Oktober 2026** dan tanggal akhir **30 September 2029**. Jika satu file memuat beberapa ID Pelanggan atau Salesforce berbeda untuk layanan yang sama, impor ditolak agar kode pelanggan tidak tercampur.
+
+ID Pelanggan diubah menjadi huruf besar hanya saat ekspor. Nilai Salesforce asli dipertahankan untuk nama file dan `tariff_sub_service_code`; bentuk numeriknya dipakai pada `kdlayanan_pelanggan`. Salesforce yang kosong atau tidak valid pada layanan aktif harus diperbaiki sebelum ekspor.
 
 ## Nilai per rute
 
 - Layanan: default PKH (`420`)
 - Formula ID: default `1644` (`PJE`); opsi otomatis mengikuti layanan
 - Opsi manual Formula ID: `1644` (`PJE`)
-- SLA: wajib diisi pengguna dalam hari bulat lebih dari `0`
+- SLA: otomatis 4 hari untuk impor PKH dan 2 hari untuk impor PE; dapat diedit menjadi hari bulat lebih dari `0`. Baris manual dan format standar tetap memerlukan pengisian SLA.
 - SLA jam: otomatis dihitung `hari × 24`
 - Berat Minimum: default `1000` gram
 - Berat Kelipatan: default `1000` gram
@@ -100,7 +104,7 @@ Untuk KBM, Formula ID otomatis tidak tersedia karena tabel referensi menampilkan
 ## Workbook keluaran
 
 - Nama lembar kerja: `TariffCustomer`
-- Nama file: `Tarif_Negotiable_<Nomor Salesforce>.xlsx`
+- Nama file satu Salesforce: `Tarif_Negotiable_<Nomor Salesforce>.xlsx`; untuk dua Salesforce: `Tarif_Negotiable_<Salesforce PKH>_<Salesforce PE>.xlsx`
 - Jumlah kolom: 13
 - Kode asal, tujuan, tanggal, kode pelanggan, deskripsi, dan JSON ditulis sebagai teks
 - Service ID, SLA, Formula ID, dan `disableTariff` ditulis sebagai angka
@@ -115,7 +119,7 @@ Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
 4. Pastikan custom domain `tarif.posnew.com` telah terpasang.
 5. Folder `functions/` harus ikut diunggah. Middleware akan mengalihkan `tarifmile.pages.dev` ke `tarif.posnew.com` sambil mempertahankan path dan query.
 
-HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261016-203`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
+HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261016-204`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
 
 ## Pengujian
 

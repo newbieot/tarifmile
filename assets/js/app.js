@@ -11,7 +11,8 @@
     filters: { search: '', status: 'all', service: 'all' },
     validation: null,
     generated: null,
-    processing: false
+    processing: false,
+    useServiceSalesforce: false
   };
 
   const dom = {};
@@ -21,9 +22,9 @@
 
   function cacheDom() {
     [
-      'customerId', 'salesforceNumber', 'startDate', 'endDate', 'setupCompletion',
-      'customerError', 'salesforceError', 'startError', 'endError',
-      'fieldGroupCustomer', 'fieldGroupSalesforce', 'fieldGroupStart', 'fieldGroupEnd',
+      'customerId', 'salesforceNumber', 'salesforcePe', 'salesforceLabel', 'salesforceHelp', 'startDate', 'endDate', 'setupCompletion',
+      'customerError', 'salesforceError', 'salesforcePeError', 'startError', 'endError',
+      'fieldGroupCustomer', 'fieldGroupSalesforce', 'fieldGroupSalesforcePe', 'fieldGroupStart', 'fieldGroupEnd',
       'dropzone', 'fileInput', 'importTariffType', 'fileCard', 'selectedFileName', 'selectedFileMeta', 'selectedFileStatus',
       'replaceFileButton', 'removeFileButton', 'progressBox', 'progressTitle', 'progressDetail',
       'importMessage', 'importSummary', 'sourceRowsMetric', 'importedMetric', 'duplicatesMetric',
@@ -73,9 +74,19 @@
     return {
       customerId: dom.customerId.value,
       salesforceNumber: dom.salesforceNumber.value,
+      ...(state.useServiceSalesforce ? { salesforceByService: { 420: dom.salesforceNumber.value, 411: dom.salesforcePe.value } } : {}),
       startDate: dom.startDate.value,
       endDate: dom.endDate.value
     };
+  }
+
+  function renderSalesforceFields() {
+    dom.fieldGroupSalesforcePe.hidden = !state.useServiceSalesforce;
+    dom.salesforceLabel.firstChild.textContent = state.useServiceSalesforce ? 'Nomor Salesforce PKH ' : 'Nomor Salesforce ';
+    dom.salesforceLabel.querySelector('span').textContent = state.useServiceSalesforce ? 'Untuk PKH' : 'Wajib';
+    dom.salesforceHelp.textContent = state.useServiceSalesforce
+      ? 'Dibaca dari Kode Salesforce PKH; digunakan untuk layanan PKH.'
+      : 'ID produk atau sublayanan yang digunakan pada workbook hasil ekspor.';
   }
 
   function setProgress(title, detail, visible) {
@@ -367,6 +378,7 @@
     const fields = [
       ['customerId', 'customerError', 'fieldGroupCustomer'],
       ['salesforceNumber', 'salesforceError', 'fieldGroupSalesforce'],
+      ['salesforcePe', 'salesforcePeError', 'fieldGroupSalesforcePe'],
       ['startDate', 'startError', 'fieldGroupStart'],
       ['endDate', 'endError', 'fieldGroupEnd']
     ];
@@ -440,7 +452,7 @@
     const services = [...new Set(records.map((record) => String(record.service_id)))].join(', ') || '—';
     dom.previewGrid.replaceChildren(
       addPreviewItem('ID Pelanggan', globalValues.customerId ? T.normalizeCustomerId(globalValues.customerId) : '—'),
-      addPreviewItem('Salesforce', globalValues.salesforceNumber || '—'),
+      addPreviewItem('Salesforce', T.getSalesforceSummary(globalValues, state.rows) || '—'),
       addPreviewItem('Periode Berlaku', globalValues.startDate && globalValues.endDate ? `${globalValues.startDate} → ${globalValues.endDate}` : '—'),
       addPreviewItem('Rute Siap', String(records.length)),
       addPreviewItem('Layanan', services),
@@ -472,7 +484,7 @@
 
   function renderExportBar() {
     const globalValues = getGlobalValues();
-    const filename = globalValues.salesforceNumber ? T.getOutputFilename(globalValues.salesforceNumber) : 'Tarif_Negotiable_<Nomor Salesforce>.xlsx';
+    const filename = T.getSalesforceNumbers(globalValues, state.rows).length ? T.getWorkspaceFilename(globalValues, state.rows) : 'Tarif_Negotiable_<Nomor Salesforce>.xlsx';
     dom.exportFilename.textContent = `File keluaran: ${filename}`;
     dom.exportButton.disabled = !state.validation.exportable || state.processing || !root.XLSX;
     if (!root.XLSX) dom.exportHeadline.textContent = 'SheetJS tidak tersedia. Periksa koneksi lalu muat ulang halaman.';
@@ -606,7 +618,9 @@
     const skipped = summary.duplicatesSkipped + summary.emptyRowsSkipped;
     const sourceNote = summary.sourceFormat === 'zone' ? ' Kodepos asal dan tujuan memakai kolom zona.' : '';
     const tariffSource = T.ZONE_TARIFF_TYPES[summary.tariffType];
-    const tariffNote = tariffSource ? ` Tarif ${tariffSource.label} untuk layanan ${tariffSource.serviceName}.` : '';
+    const tariffNote = summary.tariffType === 'both'
+      ? ` PKH: ${summary.serviceCounts.PKH || 0} rute, PE: ${summary.serviceCounts.PE || 0} rute.`
+      : tariffSource ? ` Tarif ${tariffSource.label} untuk layanan ${tariffSource.serviceName}.` : '';
     const conflictNote = summary.conflictingTariffRoutes ? ` ${summary.conflictingTariffRoutes} rute zona memiliki tarif berbeda; isi kembali tarifnya sebelum ekspor.` : '';
     dom.importSummaryText.textContent = `${summary.routesImported} rute tarif diimpor. ${summary.duplicatesSkipped} duplikat dan ${summary.emptyRowsSkipped} baris kosong dilewati.${skipped === 0 ? ' Tidak ada baris sumber yang dilewati.' : ''}${sourceNote}${tariffNote}${conflictNote}`;
     dom.toggleDuplicatesButton.hidden = summary.duplicateRoutes.length === 0;
@@ -640,9 +654,23 @@
       setProgress('Memvalidasi data', 'Memeriksa rute impor dan nilai tarif…', true);
       state.rows = result.rows;
       state.rows[0].expanded = true;
+      const customerData = result.customerData;
+      if (customerData.customerId !== undefined) dom.customerId.value = customerData.customerId;
+      state.useServiceSalesforce = Boolean(customerData.salesforceByService);
+      if (state.useServiceSalesforce) {
+        dom.salesforceNumber.value = customerData.salesforceByService[420];
+        dom.salesforcePe.value = customerData.salesforceByService[411];
+      } else {
+        dom.salesforcePe.value = '';
+        if (customerData.salesforceNumber !== undefined) dom.salesforceNumber.value = customerData.salesforceNumber;
+      }
+      dom.startDate.value = customerData.startDate;
+      dom.endDate.value = customerData.endDate;
+      renderSalesforceFields();
       renderImportSummary(result.summary);
       renderFileCard(file, `${result.summary.routesImported} rute diimpor dari ${result.sheetName}`);
-      setImportMessage(`${result.summary.routesImported} rute tarif berhasil diimpor. Isi SLA dan tinjau baris yang disorot sebelum ekspor.`, 'success');
+      const slaNote = result.header.channels && result.header.channels.length ? ' SLA otomatis: PKH 4 hari, PE 2 hari.' : ' Isi SLA.';
+      setImportMessage(`${result.summary.routesImported} rute tarif berhasil diimpor.${slaNote} Tinjau baris yang disorot sebelum ekspor.`, 'success');
       showToast('Rute tarif berhasil diimpor.', 'success');
       announce(`${result.summary.routesImported} rute tarif diimpor.`);
     } catch (error) {
@@ -680,9 +708,12 @@
   function clearWorkspace() {
     dom.customerId.value = '';
     dom.salesforceNumber.value = '';
+    dom.salesforcePe.value = '';
+    state.useServiceSalesforce = false;
+    renderSalesforceFields();
     dom.startDate.value = '';
     dom.endDate.value = '';
-    dom.importTariffType.value = 'reguler';
+    dom.importTariffType.value = 'both';
     state.selectedFile = null;
     renderFileCard(null);
     setImportMessage('', '');
@@ -702,12 +733,12 @@
     const serviceNames = [...new Set(state.rows.map((row) => T.getServiceLabel(row.serviceId)))].join(', ');
     return [
       ['ID Pelanggan', T.normalizeCustomerId(globals.customerId)],
-      ['Nomor Salesforce', globals.salesforceNumber],
+      ['Nomor Salesforce', T.getSalesforceSummary(globals, state.rows)],
       ['Periode Berlaku', `${globals.startDate} → ${globals.endDate}`],
       ['Jumlah Rute', String(state.rows.length)],
       ['Rute Valid', String(state.validation.readyCount)],
       ['Layanan Terpilih', serviceNames],
-      ['Nama File Keluaran', T.getOutputFilename(globals.salesforceNumber)],
+      ['Nama File Keluaran', T.getWorkspaceFilename(globals, state.rows)],
       ['Lembar Kerja', T.DEFAULTS.worksheetName]
     ];
   }
@@ -758,7 +789,7 @@
   }
 
   function bindGlobalEvents() {
-    [dom.customerId, dom.salesforceNumber, dom.startDate, dom.endDate].forEach((input) => {
+    [dom.customerId, dom.salesforceNumber, dom.salesforcePe, dom.startDate, dom.endDate].forEach((input) => {
       input.addEventListener('input', () => { clearGenerated(); refresh(); });
       input.addEventListener('change', () => { clearGenerated(); refresh(); });
     });
@@ -844,6 +875,11 @@
       if (!row) return;
       if (event.target.dataset.field === 'serviceId') {
         row.serviceId = Number(event.target.value);
+        const serviceDefaults = Object.values(T.ZONE_TARIFF_TYPES).find((service) => service.serviceId === row.serviceId);
+        if (serviceDefaults) {
+          row.slaDays = serviceDefaults.slaDays;
+          tr.querySelector('[data-field="slaDays"]').value = row.slaDays;
+        }
         clearGenerated();
         refresh({ rowId: row.id });
       } else if (event.target.dataset.field === 'formulaIdOverride') {

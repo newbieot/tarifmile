@@ -2,6 +2,11 @@
 
 ## 2026-10-16
 
+- Satu unggahan otomatis memuat PKH dan PE sekaligus, dengan Salesforce masing-masing pada setiap baris ekspor.
+- ID Pelanggan dan kode Salesforce PKH/PE otomatis dibaca dari Excel. Data pelanggan yang tidak konsisten ditolak.
+- Tanggal hasil impor otomatis 16 Oktober 2026 sampai 30 September 2029.
+- SLA impor PKH otomatis 4 hari (96 jam), PE 2 hari (48 jam).
+- Nama file keluaran mendukung kedua Salesforce. Cache key aset terbaru `20261016-204`.
 - Impor format kodepos zona, termasuk header multibaris pada workbook tarif MA Provinsi KEPRI.
 - Kodepos asal dan tujuan memakai `KODEPOS ASAL ZONA` dan `KODEPOS TUJUAN ZONA`.
 - Pilihan tarif sebelum impor: REGULER untuk PKH (`420`), NEXTDAY untuk PE (`411`).

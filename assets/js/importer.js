@@ -6,9 +6,19 @@
   const REQUIRED_HEADERS = Object.freeze(['RUTE KANTOR', 'TARIF', 'LAYANAN']);
   const ZONE_HEADERS = Object.freeze(['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA']);
   const ZONE_TARIFF_TYPES = Object.freeze({
-    reguler: Object.freeze({ label: 'REGULER', serviceId: 420, serviceName: 'PKH' }),
-    nextday: Object.freeze({ label: 'NEXTDAY', serviceId: 411, serviceName: 'PE' })
+    reguler: Object.freeze({ label: 'REGULER', serviceId: 420, serviceName: 'PKH', slaDays: 4 }),
+    nextday: Object.freeze({ label: 'NEXTDAY', serviceId: 411, serviceName: 'PE', slaDays: 2 })
   });
+  const IMPORT_DATES = Object.freeze({ startDate: '2026-10-16', endDate: '2029-09-30' });
+
+  function getCustomerIndexes(headers) {
+    return {
+      customerId: headers.indexOf('ID PELANGGAN'),
+      salesforceNumber: headers.findIndex((name) => ['NOMOR SALESFORCE', 'KODE SALESFORCE'].includes(name)),
+      salesforcePkh: headers.indexOf('KODE SALESFORCE PKH'),
+      salesforcePe: headers.indexOf('KODE SALESFORCE PE')
+    };
+  }
 
   function normalizeHeader(value) {
     return String(value ?? '')
@@ -36,10 +46,9 @@
   }
 
   function findHeaderRow(rawRows, options) {
-    const tariffType = (options && options.tariffType) || 'reguler';
-    const zoneTariff = ZONE_TARIFF_TYPES[tariffType];
-    if (!zoneTariff) {
-      const error = new Error('Pilih tarif REGULER (PKH) atau NEXTDAY (PE).');
+    const tariffType = (options && options.tariffType) || 'both';
+    if (tariffType !== 'both' && !Object.prototype.hasOwnProperty.call(ZONE_TARIFF_TYPES, tariffType)) {
+      const error = new Error('Pilih PKH dan PE, REGULER (PKH), atau NEXTDAY (PE).');
       error.code = 'INVALID_TARIFF_TYPE';
       throw error;
     }
@@ -52,14 +61,20 @@
       const normalized = row.map(normalizeHeader);
       const origin = normalized.indexOf(ZONE_HEADERS[0]);
       const destination = normalized.indexOf(ZONE_HEADERS[1]);
+      const customerIndexes = getCustomerIndexes(normalized);
       if (origin >= 0 && destination >= 0) {
-        const typedTariff = normalized.findIndex((name) => /^TARIF\b/.test(name) && name.split(' ').includes(zoneTariff.label));
-        const tariff = typedTariff >= 0 ? typedTariff : normalized.indexOf('TARIF');
+        const channels = Object.entries(ZONE_TARIFF_TYPES)
+          .filter(([type]) => tariffType === 'both' || type === tariffType)
+          .map(([type, config]) => ({ ...config, type,
+            tariffIndex: normalized.findIndex((name) => /^TARIF\b/.test(name) && name.split(' ').includes(config.label)) }))
+          .filter((channel) => channel.tariffIndex >= 0);
+        const tariff = channels.length ? channels[0].tariffIndex : normalized.indexOf('TARIF');
         const serviceDescription = normalized.indexOf('LAYANAN');
-        if (tariff >= 0 && (typedTariff >= 0 || serviceDescription >= 0)) {
+        if (tariff >= 0 && (channels.length || serviceDescription >= 0)) {
           return {
             found: true, rowIndex, format: 'zone',
-            tariffType: typedTariff >= 0 ? tariffType : null,
+            tariffType: channels.length > 1 ? 'both' : channels.length ? channels[0].type : null,
+            channels, customerIndexes,
             indexes: { route: -1, origin, destination, tariff, serviceDescription },
             normalizedHeaders: normalized
           };
@@ -72,7 +87,7 @@
         serviceDescription: normalized.indexOf(REQUIRED_HEADERS[2])
       };
       if (indexes.route >= 0 && indexes.tariff >= 0 && indexes.serviceDescription >= 0) {
-        return { found: true, rowIndex, indexes, normalizedHeaders: normalized };
+        return { found: true, rowIndex, indexes, customerIndexes, normalizedHeaders: normalized };
       }
     }
 
@@ -154,6 +169,21 @@
     return row.every((cell) => String(cell ?? '').trim() === '');
   }
 
+  function collectCustomerValues(row, indexes, values, rowNumber) {
+    Object.entries(indexes).forEach(([field, column]) => {
+      if (column < 0) return;
+      const value = String(row[column] ?? '').trim();
+      if (!value) return;
+      values[field].add(value);
+      if (values[field].size > 1) {
+        const labels = { customerId: 'ID Pelanggan', salesforceNumber: 'Nomor Salesforce', salesforcePkh: 'Salesforce PKH', salesforcePe: 'Salesforce PE' };
+        const error = new Error(`${labels[field]} berbeda pada baris ${rowNumber}. Impor file dengan satu ID Pelanggan dan satu Nomor Salesforce per layanan.`);
+        error.code = 'INCONSISTENT_CUSTOMER_DATA';
+        throw error;
+      }
+    });
+  }
+
   function parseSourceRows(rawRows, options) {
     const header = findHeaderRow(rawRows, options);
     if (!header.found) {
@@ -166,6 +196,7 @@
       headerRowNumber: header.rowIndex + 1,
       sourceFormat: header.format || 'route',
       tariffType: header.tariffType || null,
+      serviceCounts: {},
       sourceRowsFound: 0,
       routesImported: 0,
       duplicatesSkipped: 0,
@@ -177,7 +208,8 @@
     };
     const seenRoutes = new Map();
     const duplicateRouteKeys = new Set();
-    const zoneTariff = header.tariffType ? ZONE_TARIFF_TYPES[header.tariffType] : null;
+    const channels = header.channels && header.channels.length ? header.channels : [{ tariffIndex: header.indexes.tariff }];
+    const customerValues = { customerId: new Set(), salesforceNumber: new Set(), salesforcePkh: new Set(), salesforcePe: new Set() };
     const rows = [];
 
     for (let index = header.rowIndex + 1; index < rawRows.length; index += 1) {
@@ -197,53 +229,59 @@
         summary.emptyRowsSkipped += 1;
         continue;
       }
-
-      const tariff = parseTariffValue(sourceRow[header.indexes.tariff]);
-      const previous = seenRoutes.get(rawRoute);
-      if (previous) {
-        summary.duplicatesSkipped += 1;
-        duplicateRouteKeys.add(rawRoute);
-        if (header.format === 'zone' && previous.tariff !== tariff && !previous.conflict) {
-          previous.conflict = true;
-          previous.row.minimumTariff = '';
-          previous.row.incrementTariff = '';
-          previous.row.importNeedsReview = true;
-          previous.row.importReviewMessage = [previous.row.importReviewMessage,
-            `Tarif berbeda untuk rute zona yang sama pada baris ${previous.row.sourceRowNumber} (${previous.tariff === '' ? 'kosong' : previous.tariff}) dan ${index + 1} (${tariff === '' ? 'kosong' : tariff}). Isi kembali Tarif Minimum dan Tarif Kelipatan.`
-          ].filter(Boolean).join(' ');
-          summary.conflictingTariffRoutes += 1;
-        }
-        continue;
-      }
+      collectCustomerValues(sourceRow, header.customerIndexes, customerValues, index + 1);
 
       const route = header.format === 'zone'
         ? { origin, destination, raw: rawRoute, needsReview: !origin || !destination,
           message: [!origin ? 'Kodepos asal zona kosong.' : '', !destination ? 'Kodepos tujuan zona kosong.' : ''].filter(Boolean).join(' ') }
         : parseRoute(rawRoute);
-      const serviceDescription = zoneTariff ? zoneTariff.serviceName : String(sourceRow[header.indexes.serviceDescription] ?? '').trim();
-      const reviewMessages = [];
-      if (route.needsReview && route.message) reviewMessages.push(route.message);
-      if (tariff === '') {
-        reviewMessages.push('Nilai tarif impor tidak dapat dibaca sebagai angka.');
-        summary.invalidTariffRows += 1;
-      }
-      if (!serviceDescription) reviewMessages.push('Deskripsi layanan pada data impor kosong.');
+      for (const channel of channels) {
+        const tariff = parseTariffValue(sourceRow[channel.tariffIndex]);
+        const routeKey = `${rawRoute}|${channel.serviceId || namespace.DEFAULTS.serviceId}`;
+        const previous = seenRoutes.get(routeKey);
+        if (previous) {
+          summary.duplicatesSkipped += 1;
+          duplicateRouteKeys.add(channels.length > 1 ? `${rawRoute} (${channel.serviceName})` : rawRoute);
+          if (header.format === 'zone' && previous.tariff !== tariff && !previous.conflict) {
+            previous.conflict = true;
+            previous.row.minimumTariff = '';
+            previous.row.incrementTariff = '';
+            previous.row.importNeedsReview = true;
+            previous.row.importReviewMessage = [previous.row.importReviewMessage,
+              `Tarif ${channel.serviceName || ''} berbeda untuk rute zona yang sama pada baris ${previous.row.sourceRowNumber} (${previous.tariff === '' ? 'kosong' : previous.tariff}) dan ${index + 1} (${tariff === '' ? 'kosong' : tariff}). Isi kembali Tarif Minimum dan Tarif Kelipatan.`
+            ].filter(Boolean).join(' ');
+            summary.conflictingTariffRoutes += 1;
+          }
+          continue;
+        }
 
-      const row = namespace.createDefaultRow({
-        origin: route.origin,
-        destination: route.destination,
-        ...(zoneTariff ? { serviceId: zoneTariff.serviceId } : {}),
-        minimumTariff: tariff,
-        incrementTariff: tariff,
-        description: serviceDescription,
-        importedRouteRaw: route.raw,
-        importNeedsReview: reviewMessages.length > 0,
-        importReviewMessage: reviewMessages.join(' '),
-        sourceRowNumber: index + 1
-      });
-      seenRoutes.set(rawRoute, { row, tariff, conflict: false });
-      rows.push(row);
-      summary.routesImported += 1;
+        const serviceDescription = channel.serviceName || String(sourceRow[header.indexes.serviceDescription] ?? '').trim();
+        const reviewMessages = [];
+        if (route.needsReview && route.message) reviewMessages.push(route.message);
+        if (tariff === '') {
+          reviewMessages.push('Nilai tarif impor tidak dapat dibaca sebagai angka.');
+          summary.invalidTariffRows += 1;
+        }
+        if (!serviceDescription) reviewMessages.push('Deskripsi layanan pada data impor kosong.');
+
+        const row = namespace.createDefaultRow({
+          origin: route.origin,
+          destination: route.destination,
+          ...(channel.serviceId ? { serviceId: channel.serviceId, slaDays: channel.slaDays } : {}),
+          minimumTariff: tariff,
+          incrementTariff: tariff,
+          description: serviceDescription,
+          importedRouteRaw: route.raw,
+          importNeedsReview: reviewMessages.length > 0,
+          importReviewMessage: reviewMessages.join(' '),
+          sourceRowNumber: index + 1
+        });
+        seenRoutes.set(routeKey, { row, tariff, conflict: false });
+        rows.push(row);
+        summary.routesImported += 1;
+        const serviceName = channel.serviceName || namespace.getService(row.serviceId).name;
+        summary.serviceCounts[serviceName] = (summary.serviceCounts[serviceName] || 0) + 1;
+      }
     }
 
     summary.duplicateRoutes = Array.from(duplicateRouteKeys);
@@ -256,7 +294,16 @@
       throw error;
     }
 
-    return { rows, summary, header };
+    const customerData = { ...IMPORT_DATES };
+    if (header.customerIndexes.customerId >= 0) customerData.customerId = [...customerValues.customerId][0] || '';
+    if (header.customerIndexes.salesforceNumber >= 0) customerData.salesforceNumber = [...customerValues.salesforceNumber][0] || '';
+    if (header.customerIndexes.salesforcePkh >= 0 || header.customerIndexes.salesforcePe >= 0) {
+      customerData.salesforceByService = {
+        420: [...customerValues.salesforcePkh][0] || '',
+        411: [...customerValues.salesforcePe][0] || ''
+      };
+    }
+    return { rows, summary, header, customerData };
   }
 
   async function readWorkbookFile(file, onProgress, options) {
@@ -350,6 +397,7 @@
     REQUIRED_HEADERS,
     ZONE_HEADERS,
     ZONE_TARIFF_TYPES,
+    IMPORT_DATES,
     normalizeHeader,
     getExtension,
     validateSourceFile,

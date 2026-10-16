@@ -51,7 +51,8 @@
     if (!Number.isFinite(formulaId)) {
       throw new Error('Formula ID belum tersedia. Pilih Formula ID 1644 (PJE) atau layanan lain.');
     }
-    const formula = buildFormula(row, globalValues.salesforceNumber);
+    const salesforceNumber = namespace.getSalesforceNumber(globalValues, row);
+    const formula = buildFormula(row, salesforceNumber);
 
     return {
       tariff_from_code: protectSpreadsheetText(String(row.origin ?? '').trim()),
@@ -65,7 +66,7 @@
       expiry_end: protectSpreadsheetText(String(globalValues.endDate ?? '').trim()),
       customer_type_code: protectSpreadsheetText(namespace.normalizeCustomerId(globalValues.customerId)),
       disableTariff: namespace.DEFAULTS.disableTariff,
-      tariff_sub_service_code: protectSpreadsheetText(String(globalValues.salesforceNumber ?? '').trim()),
+      tariff_sub_service_code: protectSpreadsheetText(salesforceNumber),
       tariff_sub_service_description: protectSpreadsheetText(namespace.normalizeDescription(row.description))
     };
   }
@@ -117,6 +118,10 @@
     return `Tarif_Negotiable_${String(salesforceNumber ?? '').trim()}.xlsx`;
   }
 
+  function getWorkspaceFilename(globalValues, rows) {
+    return getOutputFilename(namespace.getSalesforceNumbers(globalValues, rows).join('_') || globalValues.salesforceNumber);
+  }
+
   function createWorkbookBlob(globalValues, rows) {
     const built = buildWorkbook(globalValues, rows);
     let arrayBuffer;
@@ -135,7 +140,7 @@
 
     return {
       blob: new Blob([arrayBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-      filename: getOutputFilename(globalValues.salesforceNumber),
+      filename: getWorkspaceFilename(globalValues, rows),
       records: built.records,
       workbook: built.workbook
     };
@@ -171,6 +176,7 @@
     buildWorksheet,
     buildWorkbook,
     getOutputFilename,
+    getWorkspaceFilename,
     createWorkbookBlob,
     downloadBlob,
     generateAndDownload

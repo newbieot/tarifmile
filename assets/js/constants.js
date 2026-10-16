@@ -158,6 +158,26 @@
     return `${(numericBytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  function getSalesforceNumber(values, row) {
+    const codes = values.salesforceByService;
+    const code = codes && Object.prototype.hasOwnProperty.call(codes, row.serviceId)
+      ? codes[row.serviceId] : values.salesforceNumber;
+    return String(code ?? '').trim();
+  }
+
+  function getSalesforceNumbers(values, rows) {
+    return [...new Set(rows.map((row) => getSalesforceNumber(values, row)).filter(Boolean))];
+  }
+
+  function getSalesforceSummary(values, rows) {
+    if (!values.salesforceByService) return String(values.salesforceNumber ?? '').trim();
+    const serviceIds = [...new Set(rows.map((row) => Number(row.serviceId)))];
+    return serviceIds.map((serviceId) => {
+      const service = getService(serviceId);
+      return `${service ? service.name : serviceId}: ${getSalesforceNumber(values, { serviceId }) || 'belum diisi'}`;
+    }).join(' · ');
+  }
+
   Object.assign(namespace, {
     APP_VERSION,
     PJE_FORMULA_ID,
@@ -175,7 +195,10 @@
     normalizeDescription,
     normalizeCustomerId,
     safeTrim,
-    formatFileSize
+    formatFileSize,
+    getSalesforceNumber,
+    getSalesforceNumbers,
+    getSalesforceSummary
   });
 
   root.TariffBuilder = namespace;

@@ -222,6 +222,48 @@ with sync_playwright() as p:
     check('tarif berbeda' in page.locator('#importSummaryText').text_content(), 'Zone tariff conflict summary missing')
     check(page.locator('#exportButton').is_disabled(), 'Unresolved zone tariffs must prevent export')
 
+    # Both services, customer metadata, contract dates, and SLA are automatic.
+    page.evaluate("""window.XLSX._nextRows = [
+      [],
+      ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER', 'TARIF NEXTDAY',
+       'ID PELANGGAN', 'Kode Salesforce PE', 'Kode Salesforce PKH'],
+      [29400, 10000, 32400, 55200, 'AUTO-CUSTOMER', 897924, 898845],
+      [29400, 10000, 32400, 55200, 'AUTO-CUSTOMER', 897924, 898845],
+      [29400, 14530, 44400, 0, 'AUTO-CUSTOMER', 897924, 898845]
+    ]""")
+    page.select_option('#importTariffType', 'both')
+    page.set_input_files('#fileInput', str(xlsx))
+    page.wait_for_function("document.querySelector('#importedMetric').textContent === '4'")
+    check(page.locator('#customerId').input_value() == 'AUTO-CUSTOMER', 'Customer ID was not imported')
+    check(page.locator('#salesforceNumber').input_value() == '898845', 'PKH Salesforce was not imported')
+    check(page.locator('#salesforcePe').input_value() == '897924', 'PE Salesforce was not imported')
+    check(page.locator('#fieldGroupSalesforcePe').is_visible(), 'Per-service Salesforce fields are hidden')
+    check(page.locator('#startDate').input_value() == '2026-10-16', 'Import start date mismatch')
+    check(page.locator('#endDate').input_value() == '2029-09-30', 'Import end date mismatch')
+    check(page.locator('#tariffTableBody tr').count() == 4, 'Both services were not imported')
+    for index, days in enumerate(['4', '2', '4', '2']):
+        check(page.locator('#tariffTableBody tr').nth(index).locator('[data-field="slaDays"]').input_value() == days, 'Automatic service SLA mismatch')
+    check(page.locator('#exportButton').is_enabled(), 'Automatic import should be ready without manual form edits')
+    page.fill('#salesforcePe', '')
+    check(page.locator('#exportButton').is_disabled(), 'Missing PE Salesforce must prevent export')
+    page.fill('#salesforcePe', 'invalid')
+    check(page.locator('#exportButton').is_disabled(), 'Invalid PE Salesforce must prevent export')
+    page.fill('#salesforcePe', '897924')
+    page.click('#exportButton')
+    with page.expect_download(timeout=10000):
+        page.click('#confirmExportButton')
+    mixed_sheet = page.evaluate("window.__lastWorkbook.Sheets.TariffCustomer")
+    check(mixed_sheet['L2']['v'] == '898845' and mixed_sheet['L3']['v'] == '897924', 'Exported Salesforce codes crossed services')
+    check(mixed_sheet['D2']['v'] == 4 and mixed_sheet['D3']['v'] == 2, 'Exported service SLA mismatch')
+    check(mixed_sheet['H2']['v'] == '2026-10-16' and mixed_sheet['I3']['v'] == '2029-09-30', 'Exported import contract dates mismatch')
+    check('898845_897924' in page.locator('#exportFilename').text_content(), 'Mixed Salesforce filename mismatch')
+
+    page.evaluate("window.XLSX._nextRows[3][4] = 'OTHER-CUSTOMER'")
+    page.set_input_files('#fileInput', str(xlsx))
+    page.wait_for_function("document.querySelector('#selectedFileStatus').textContent === 'Impor gagal'")
+    check('ID Pelanggan berbeda' in page.locator('#importMessage').text_content(), 'Inconsistent customer error missing')
+    check(page.locator('#customerId').input_value() == 'AUTO-CUSTOMER', 'Failed import changed the existing customer')
+
     page.emulate_media(reduced_motion='reduce')
     check(page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches"), 'Reduced-motion mode was not recognized')
     check(not page_errors, 'Browser page errors: ' + '; '.join(page_errors))

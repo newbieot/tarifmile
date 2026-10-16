@@ -16,26 +16,35 @@
 
   function validateGlobalFields(values) {
     const customerId = String(values.customerId ?? '').trim();
-    const salesforceNumber = String(values.salesforceNumber ?? '').trim();
+    const salesforceNumber = namespace.getSalesforceNumber(values, { serviceId: 420 });
     const startDate = String(values.startDate ?? '').trim();
     const endDate = String(values.endDate ?? '').trim();
     const errors = {};
+    const serviceIds = values.serviceIds || Object.keys(values.salesforceByService || {});
+    const salesforceFields = values.salesforceByService
+      ? [...new Set(serviceIds.map((id) => Number(id) === 411 ? 'salesforcePe' : 'salesforceNumber'))]
+        .map((field) => ({ field, value: field === 'salesforcePe'
+          ? String(values.salesforceByService[411] ?? '').trim() : salesforceNumber }))
+      : [{ field: 'salesforceNumber', value: salesforceNumber }];
 
     if (!customerId) errors.customerId = 'ID Pelanggan wajib diisi.';
-    if (!salesforceNumber) errors.salesforceNumber = 'Nomor Salesforce wajib diisi.';
-    else if (!/[0-9]/.test(salesforceNumber)) errors.salesforceNumber = 'Nomor Salesforce harus memuat minimal satu angka.';
+    salesforceFields.forEach(({ field, value }) => {
+      if (!value) errors[field] = 'Nomor Salesforce wajib diisi.';
+      else if (!/[0-9]/.test(value)) errors[field] = 'Nomor Salesforce harus memuat minimal satu angka.';
+    });
     if (!startDate) errors.startDate = 'Tanggal mulai berlaku wajib diisi.';
     if (!endDate) errors.endDate = 'Tanggal akhir berlaku wajib diisi.';
     if (startDate && endDate && endDate < startDate) {
       errors.endDate = 'Tanggal akhir tidak boleh lebih awal dari tanggal mulai.';
     }
 
-    const completedFields = [customerId, salesforceNumber, startDate, endDate].filter(Boolean).length;
+    const fieldValues = [customerId, startDate, endDate, ...salesforceFields.map(({ value }) => value)];
+    const completedFields = fieldValues.filter(Boolean).length;
     return {
       valid: Object.keys(errors).length === 0,
       errors,
       completedFields,
-      remainingFields: 4 - completedFields,
+      remainingFields: fieldValues.length - completedFields,
       normalized: { customerId, salesforceNumber, startDate, endDate }
     };
   }
@@ -160,7 +169,7 @@
   }
 
   function validateWorkspace(globalValues, rows) {
-    const globals = validateGlobalFields(globalValues);
+    const globals = validateGlobalFields({ ...globalValues, serviceIds: (rows || []).map((row) => row.serviceId) });
     const rowValidation = validateRows(rows);
     const hasRows = Array.isArray(rows) && rows.length > 0;
     const exportable = globals.valid && hasRows && rowValidation.counts.critical === 0;
