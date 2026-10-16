@@ -213,14 +213,26 @@ with sync_playwright() as p:
         check(f'Tarif {tariff_type.upper()}' in page.locator('#importSummaryText').text_content(), 'Selected tariff source missing from summary')
     check(page.locator('#tariffTableBody tr').count() == 1, 'An unavailable NEXTDAY tariff created a PE row')
 
-    # A conflicting tariff for the same zone must require manual correction.
+    # A different tariff in the same zone uses the highest value and displays a warning.
     page.evaluate('window.XLSX._nextRows[3][6] = 60000')
+    page.select_option('#statusFilter', 'critical')
     page.set_input_files('#fileInput', str(xlsx))
     page.wait_for_function("document.querySelector('#reviewMetric').textContent === '1'")
-    check(page.locator('#tariffTableBody tr').first.locator('[data-field="minimumTariff"]').input_value() == '', 'Conflicting minimum tariff was chosen silently')
-    check(page.locator('#tariffTableBody tr').first.locator('[data-field="incrementTariff"]').input_value() == '', 'Conflicting increment tariff was chosen silently')
+    check(page.locator('#tariffTableBody tr').first.locator('[data-field="minimumTariff"]').input_value() == '60000', 'Highest source minimum tariff was not used')
+    check(page.locator('#tariffTableBody tr').first.locator('[data-field="incrementTariff"]').input_value() == '60000', 'Highest source increment tariff was not used')
     check('tarif berbeda' in page.locator('#importSummaryText').text_content(), 'Zone tariff conflict summary missing')
-    check(page.locator('#exportButton').is_disabled(), 'Unresolved zone tariffs must prevent export')
+    check('tarif tertinggi' in page.locator('#importSummaryText').text_content().lower(), 'Duplicate tariff choice is not explained')
+    check(page.locator('#invalidRoutesCount').text_content() == '0', 'Tariff difference should be a warning')
+    check(page.locator('#reviewRoutesCount').text_content() == '1', 'Tariff difference warning was not displayed')
+    check('Memakai tarif tertinggi: 60000' in page.locator('#tariffTableBody tr').first.locator('[data-role="row-message"]').text_content(), 'Row warning does not explain the selected highest price')
+    check(page.locator('#exportButton').is_enabled(), 'Source tariffs with a warning must remain exportable')
+    check(page.locator('#statusFilter').input_value() == 'all', 'Successful import must reset the previous status filter')
+    page.click('#exportButton')
+    check('Rute dengan Peringatan1' in page.locator('#exportConfirmGrid').text_content(), 'Export confirmation omitted the warning count')
+    check('Memakai tarif tertinggi' in page.locator('#exportConfirmGrid').text_content(), 'Export confirmation does not explain the duplicate tariff rule')
+    with page.expect_download(timeout=10000):
+        page.click('#confirmExportButton')
+    check('60000' in page.evaluate("window.__lastWorkbook.Sheets.TariffCustomer.G2.v"), 'Export lost the highest source tariff')
 
     # Both services, customer metadata, contract dates, and SLA are automatic.
     page.evaluate("""window.XLSX._nextRows = [

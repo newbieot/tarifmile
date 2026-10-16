@@ -125,8 +125,8 @@ test('source import deduplicates routes and fills both tariff fields', () => {
   assert.equal(parsed.rows.length, 2);
   assert.equal(parsed.summary.routesImported, 2);
   assert.equal(parsed.summary.duplicatesSkipped, 1);
-  assert.equal(parsed.rows[0].minimumTariff, 10000);
-  assert.equal(parsed.rows[0].incrementTariff, 10000);
+  assert.equal(parsed.rows[0].minimumTariff, 20000);
+  assert.equal(parsed.rows[0].incrementTariff, 20000);
   assert.equal(parsed.rows[0].origin, '01234');
   assert.equal(parsed.rows[0].destination, '00110');
   assert.equal(parsed.rows[0].minimumWeight, 1000);
@@ -193,7 +193,7 @@ test('incomplete zone routes remain visible for correction without falling back'
   assert.match(parsed.rows[0].importReviewMessage, /tujuan zona kosong/);
 });
 
-test('conflicting zone tariffs require manual tariff values before export', () => {
+test('conflicting zone tariffs use the highest source tariff and remain exportable with a warning', () => {
   const parsed = T.parseSourceRows([
     ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF', 'Layanan'],
     [29400, 10000, 10000, 'PKH'],
@@ -208,13 +208,43 @@ test('conflicting zone tariffs require manual tariff values before export', () =
   assert.equal(parsed.summary.rowsRequiringReview, 1);
   assert.equal(parsed.summary.duplicatesSkipped, 3);
   assert.equal(parsed.summary.duplicateRoutes.length, 1);
-  assert.equal(row.minimumTariff, '');
-  assert.equal(row.incrementTariff, '');
-  assert.match(row.importReviewMessage, /baris 2 \(10000\) dan 3 \(12000\)/);
-  assert.equal(T.validateWorkspace(globals, [row]).exportable, false);
-  row.minimumTariff = 12000;
-  row.incrementTariff = 12000;
+  assert.equal(row.minimumTariff, 13000);
+  assert.equal(row.incrementTariff, 13000);
+  assert.match(row.importReviewMessage, /baris 2 \(10000\) dan 4 \(13000\)/);
+  assert.match(row.importReviewMessage, /Memakai tarif tertinggi: 13000 dari baris 4/);
+  assert.equal(T.validateRows([row]).counts.needsReview, 1);
+  assert.equal(T.validateRows([row]).counts.critical, 0);
   assert.equal(T.validateWorkspace(globals, [row]).exportable, true);
+  const record = T.buildExportRecords(globals, [row])[0];
+  assert.equal(JSON.parse(record.tariff_formula_data).base_tariff_1, 13000);
+  assert.equal(JSON.parse(record.tariff_formula_data).base_tariff_2, 13000);
+});
+
+test('zone duplicates fill a missing tariff and retain the highest readable source value', () => {
+  const result = T.parseSourceRows([
+    ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER'],
+    [29400, 22800, ''],
+    [29400, 22800, 'invalid'],
+    [29400, 22800, 42000],
+    [29400, 22800, 48000]
+  ]);
+  assert.equal(result.rows[0].minimumTariff, 48000);
+  assert.equal(result.rows[0].incrementTariff, 48000);
+  assert.match(result.rows[0].importReviewMessage, /baris 4 \(42000\) dan 5 \(48000\)/);
+  assert.doesNotMatch(result.rows[0].importReviewMessage, /tidak dapat dibaca/);
+  assert.equal(result.summary.invalidTariffRows, 0);
+  assert.equal(T.validateRows(result.rows).counts.critical, 0);
+});
+
+test('a source with no readable zone tariff remains blocked instead of inventing a value', () => {
+  const result = T.parseSourceRows([
+    ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER'],
+    [29400, 22800, ''],
+    [29400, 22800, 'invalid']
+  ]);
+  assert.equal(result.rows[0].minimumTariff, '');
+  assert.equal(result.summary.invalidTariffRows, 1);
+  assert.equal(T.validateRows(result.rows).counts.critical, 1);
 });
 
 test('zone tariff conflicts only concern the selected tariff column', () => {
@@ -347,14 +377,30 @@ test('conflicting customer or service Salesforce values are rejected even on dup
   }
 });
 
-test('a tariff conflict only clears the affected service when both are imported', () => {
+test('a tariff conflict warns only for the affected service and picks its highest source tariff', () => {
   const source = ZONE_SOURCE_ROWS.map((row) => row.slice());
   source[3][6] = 60000;
   const result = T.parseSourceRows(source);
   assert.equal(result.summary.conflictingTariffRoutes, 1);
   assert.equal(result.rows[0].minimumTariff, 32400);
-  assert.equal(result.rows[1].minimumTariff, '');
-  assert.equal(T.validateWorkspace(result.customerData, result.rows).exportable, false);
+  assert.equal(result.rows[1].minimumTariff, 60000);
+  assert.equal(result.rows[0].importNeedsReview, false);
+  assert.equal(result.rows[1].importNeedsReview, true);
+  assert.equal(T.validateWorkspace(result.customerData, result.rows).exportable, true);
+});
+
+test('highest duplicate tariff is independent of row order and zero values do not erase it', () => {
+  for (const tariffs of [[48000,42000,0], [42000,48000,0], [0,42000,48000]]) {
+    const result = T.parseSourceRows([
+      ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER'],
+      ...tariffs.map((tariff) => [29400,22800,tariff])
+    ]);
+    assert.equal(result.rows[0].minimumTariff, 48000);
+    assert.equal(result.rows[0].incrementTariff, 48000);
+    assert.equal(result.summary.conflictingTariffRoutes, 1);
+    assert.equal(T.validateRows(result.rows).counts.needsReview, 1);
+    assert.match(result.rows[0].importReviewMessage, /Memakai tarif tertinggi: 48000/);
+  }
 });
 
 test('standard imports can read generic customer columns and receive import dates', () => {

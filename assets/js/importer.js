@@ -247,15 +247,39 @@
         if (previous) {
           summary.duplicatesSkipped += 1;
           duplicateRouteKeys.add(channels.length > 1 ? `${rawRoute} (${channel.serviceName})` : rawRoute);
-          if (header.format === 'zone' && previous.tariff !== tariff && !previous.conflict) {
-            previous.conflict = true;
-            previous.row.minimumTariff = '';
-            previous.row.incrementTariff = '';
-            previous.row.importNeedsReview = true;
-            previous.row.importReviewMessage = [previous.row.importReviewMessage,
-              `Tarif ${channel.serviceName || ''} berbeda untuk rute zona yang sama pada baris ${previous.row.sourceRowNumber} (${previous.tariff === '' ? 'kosong' : previous.tariff}) dan ${index + 1} (${tariff === '' ? 'kosong' : tariff}). Isi kembali Tarif Minimum dan Tarif Kelipatan.`
-            ].filter(Boolean).join(' ');
-            summary.conflictingTariffRoutes += 1;
+          const tariffIsValid = tariff !== '' && tariff >= 0;
+          const previousTariffIsValid = previous.tariff !== '' && previous.tariff >= 0;
+          if (!previousTariffIsValid && tariffIsValid) {
+            if (previous.tariff === '') summary.invalidTariffRows -= 1;
+            previous.tariff = tariff;
+            previous.tariffRowNumber = index + 1;
+            previous.row.minimumTariff = tariff;
+            previous.row.incrementTariff = tariff;
+            previous.row.importReviewMessage = previous.row.importReviewMessage.replace('Nilai tarif impor tidak dapat dibaca sebagai angka.', '').trim();
+            previous.row.importNeedsReview = Boolean(previous.row.importReviewMessage);
+          }
+          if (tariffIsValid && previous.tariff !== tariff) {
+            const firstDifference = !previous.conflict;
+            const higherTariff = tariff > previous.tariff;
+            if (firstDifference) {
+              previous.conflict = true;
+              previous.otherTariff = Math.min(previous.tariff, tariff);
+              previous.otherTariffRowNumber = higherTariff ? previous.tariffRowNumber : index + 1;
+              previous.baseReviewMessage = previous.row.importReviewMessage;
+              summary.conflictingTariffRoutes += 1;
+            }
+            if (higherTariff) {
+              previous.tariff = tariff;
+              previous.tariffRowNumber = index + 1;
+              previous.row.minimumTariff = tariff;
+              previous.row.incrementTariff = tariff;
+            }
+            if (firstDifference || higherTariff) {
+              previous.row.importNeedsReview = true;
+              previous.row.importReviewMessage = [previous.baseReviewMessage,
+                `Tarif ${channel.serviceName || ''} berbeda untuk rute yang sama pada baris ${previous.otherTariffRowNumber} (${previous.otherTariff}) dan ${previous.tariffRowNumber} (${previous.tariff}). Memakai tarif tertinggi: ${previous.tariff} dari baris ${previous.tariffRowNumber}.`
+              ].filter(Boolean).join(' ');
+            }
           }
           continue;
         }
@@ -281,7 +305,7 @@
           importReviewMessage: reviewMessages.join(' '),
           sourceRowNumber: index + 1
         });
-        seenRoutes.set(routeKey, { row, tariff, conflict: false });
+        seenRoutes.set(routeKey, { row, tariff, tariffRowNumber: index + 1, conflict: false });
         rows.push(row);
         summary.routesImported += 1;
         const serviceName = channel.serviceName || namespace.getService(row.serviceId).name;

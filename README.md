@@ -24,7 +24,7 @@ Format rute wajib `ASAL|TUJUAN`, misalnya `29400|10110`. Contoh siap pakai terse
 assets/templates/Contoh_Import_Tarif_Route_v2.0.0.xlsx
 ```
 
-Nilai `TARIF` hasil impor mengisi Tarif Minimum dan Tarif Kelipatan. Rute duplikat berdasarkan nilai `RUTE KANTOR` dilewati.
+Nilai `TARIF` hasil impor mengisi Tarif Minimum dan Tarif Kelipatan. Rute duplikat berdasarkan nilai `RUTE KANTOR` digabung dengan mengambil tarif tertinggi; perbedaan harga diberi peringatan.
 
 Format zona, termasuk workbook tarif MA Provinsi KEPRI, juga didukung:
 
@@ -34,9 +34,10 @@ Format zona, termasuk workbook tarif MA Provinsi KEPRI, juga didukung:
 - Baris PE hanya dibuat jika tarif NEXTDAY lebih dari `0`. Pada rute duplikat, tarif PE kosong atau `0` dilewati sehingga tarif PE yang terisi tetap dipakai, terlepas dari urutan baris sumber. Zona tanpa tarif PE tidak menghasilkan baris PE.
 - Format zona dengan kolom `TARIF` dan `Layanan` juga diterima. Pilihan REGULER/NEXTDAY hanya berlaku untuk kolom tarif yang memiliki nama jenis tarif tersebut.
 - Kolom kodepos zona diprioritaskan meskipun file juga memiliki `KODEPOS ASAL`, `KODEPOS TUJUAN`, atau `RUTE KANTOR`. Kodepos zona yang kosong harus dilengkapi secara manual.
-- Duplikat digabung berdasarkan pasangan kodepos zona **dan layanan**, sehingga PKH dan PE untuk zona yang sama tetap menjadi dua baris. Jika tarif berbeda untuk zona dan layanan yang sama, Tarif Minimum dan Tarif Kelipatan pada layanan tersebut dikosongkan serta diberi pesan berisi baris sumber. Isi kembali kedua tarif sebelum ekspor.
+- Duplikat digabung berdasarkan pasangan kodepos zona **dan layanan**, sehingga PKH dan PE untuk zona yang sama tetap menjadi dua baris. **Tarif tertinggi** yang valid pada Excel dipakai untuk Tarif Minimum dan Tarif Kelipatan, terlepas dari urutan baris. Jika terdapat harga berbeda, peringatan menampilkan nilai yang berbeda, baris sumber, dan harga tertinggi yang dipakai. Peringatan tetap terlihat di tabel, ringkasan impor, dan konfirmasi ekspor, tanpa mengunci ekspor. Nilai yang benar-benar kosong atau tidak valid tetap harus diperbaiki.
 
 Pilihan tarif diterapkan saat impor; mengubah pilihan setelah impor tidak mengubah baris yang sudah diedit.
+Filter pencarian, status, dan layanan direset saat impor berhasil agar seluruh hasil unggahan baru terlihat.
 
 ## Data pelanggan
 
@@ -120,7 +121,7 @@ Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
 4. Pastikan custom domain `tarif.posnew.com` telah terpasang.
 5. Folder `functions/` harus ikut diunggah. Middleware akan mengalihkan `tarifmile.pages.dev` ke `tarif.posnew.com` sambil mempertahankan path dan query.
 
-HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261016-205`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
+HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261016-206`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
 
 ## Pengujian
 

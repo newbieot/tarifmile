@@ -2,6 +2,8 @@
 
 ## 2026-10-16
 
+- Perbaikan ekspor: tarif duplikat tidak lagi dikosongkan. Tarif tertinggi dari Excel dipakai per rute dan layanan; variasi harga tetap diberi peringatan beserta nomor baris sumber, tanpa mengunci ekspor.
+- Konfirmasi ekspor menampilkan jumlah rute dengan peringatan. Filter direset setelah impor berhasil. Cache key aset terbaru `20261016-206`.
 - Rute PE hanya diimpor jika tarif NEXTDAY positif. Nilai kosong atau 0 pada duplikat tidak lagi mengosongkan tarif PE yang terisi. Cache key aset terbaru `20261016-205`.
 - Satu unggahan otomatis memuat PKH dan PE sekaligus, dengan Salesforce masing-masing pada setiap baris ekspor.
 - ID Pelanggan dan kode Salesforce PKH/PE otomatis dibaca dari Excel. Data pelanggan yang tidak konsisten ditolak.

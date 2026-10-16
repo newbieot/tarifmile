@@ -489,8 +489,12 @@
     dom.exportButton.disabled = !state.validation.exportable || state.processing || !root.XLSX;
     if (!root.XLSX) dom.exportHeadline.textContent = 'SheetJS tidak tersedia. Periksa koneksi lalu muat ulang halaman.';
     else if (state.processing) dom.exportHeadline.textContent = 'Memproses workbook yang dipilih…';
-    else if (state.validation.exportable) dom.exportHeadline.textContent = `${state.validation.readyCount} rute tarif siap diekspor.`;
-    else dom.exportHeadline.textContent = 'Lengkapi data pelanggan, SLA, dan validasi seluruh rute sebelum ekspor.';
+    else if (state.validation.exportable) {
+      const warnings = state.validation.rows.counts.needsReview;
+      dom.exportHeadline.textContent = `${state.validation.readyCount} rute tarif siap diekspor.${warnings ? ` ${warnings} rute memiliki peringatan untuk ditinjau.` : ''}`;
+    }
+    else if (!state.validation.globals.valid) dom.exportHeadline.textContent = 'Lengkapi data pelanggan sebelum ekspor.';
+    else dom.exportHeadline.textContent = `Perbaiki ${state.validation.rows.counts.critical} rute melalui tombol Tampilkan Baris Bermasalah sebelum ekspor.`;
     dom.downloadAgainButton.hidden = !state.generated;
   }
 
@@ -621,7 +625,7 @@
     const tariffNote = summary.tariffType === 'both'
       ? ` PKH: ${summary.serviceCounts.PKH || 0} rute, PE: ${summary.serviceCounts.PE || 0} rute.`
       : tariffSource ? ` Tarif ${tariffSource.label} untuk layanan ${tariffSource.serviceName}.` : '';
-    const conflictNote = summary.conflictingTariffRoutes ? ` ${summary.conflictingTariffRoutes} rute zona memiliki tarif berbeda; isi kembali tarifnya sebelum ekspor.` : '';
+    const conflictNote = summary.conflictingTariffRoutes ? ` ${summary.conflictingTariffRoutes} rute memiliki tarif berbeda. Tarif tertinggi dari Excel dipakai; perbedaannya dicatat sebagai peringatan.` : '';
     const peNote = summary.unavailablePeRowsSkipped ? ' Baris PE tanpa tarif NEXTDAY positif dilewati; tarif PE yang terisi pada rute duplikat tetap dipakai.' : '';
     dom.importSummaryText.textContent = `${summary.routesImported} rute tarif diimpor. ${summary.duplicatesSkipped} duplikat dan ${summary.emptyRowsSkipped} baris kosong dilewati.${skipped === 0 && !summary.unavailablePeRowsSkipped ? ' Tidak ada baris sumber yang dilewati.' : ''}${sourceNote}${tariffNote}${peNote}${conflictNote}`;
     dom.toggleDuplicatesButton.hidden = summary.duplicateRoutes.length === 0;
@@ -655,6 +659,10 @@
       setProgress('Memvalidasi data', 'Memeriksa rute impor dan nilai tarif…', true);
       state.rows = result.rows;
       state.rows[0].expanded = true;
+      state.filters = { search: '', status: 'all', service: 'all' };
+      dom.rowSearch.value = '';
+      dom.statusFilter.value = 'all';
+      dom.serviceFilter.value = 'all';
       const customerData = result.customerData;
       if (customerData.customerId !== undefined) dom.customerId.value = customerData.customerId;
       state.useServiceSalesforce = Boolean(customerData.salesforceByService);
@@ -738,6 +746,8 @@
       ['Periode Berlaku', `${globals.startDate} → ${globals.endDate}`],
       ['Jumlah Rute', String(state.rows.length)],
       ['Rute Valid', String(state.validation.readyCount)],
+      ['Rute dengan Peringatan', String(state.validation.rows.counts.needsReview)],
+      ...(state.importSummary && state.importSummary.conflictingTariffRoutes ? [['Aturan Tarif Duplikat', 'Memakai tarif tertinggi dari Excel; perbedaan harga tetap diberi peringatan.']] : []),
       ['Layanan Terpilih', serviceNames],
       ['Nama File Keluaran', T.getWorkspaceFilename(globals, state.rows)],
       ['Lembar Kerja', T.DEFAULTS.worksheetName]
