@@ -31,6 +31,7 @@ Format zona, termasuk workbook tarif MA Provinsi KEPRI, juga didukung:
 - Kodepos Asal dibaca dari `KODEPOS ASAL ZONA`.
 - Kodepos Tujuan dibaca dari `KODEPOS TUJUAN ZONA`.
 - Pilihan default **PKH dan PE sekaligus (otomatis)** memuat kedua tarif dalam satu unggahan dan satu workbook keluaran. REGULER menjadi PKH (`420`) dengan SLA **4 hari / 96 jam**; NEXTDAY menjadi PE (`411`) dengan SLA **2 hari / 48 jam**. Tarif Minimum dan Tarif Kelipatan diambil dari kolom tarif masing-masing. Pilihan impor satu layanan tetap tersedia.
+- Baris PE hanya dibuat jika tarif NEXTDAY lebih dari `0`. Pada rute duplikat, tarif PE kosong atau `0` dilewati sehingga tarif PE yang terisi tetap dipakai, terlepas dari urutan baris sumber. Zona tanpa tarif PE tidak menghasilkan baris PE.
 - Format zona dengan kolom `TARIF` dan `Layanan` juga diterima. Pilihan REGULER/NEXTDAY hanya berlaku untuk kolom tarif yang memiliki nama jenis tarif tersebut.
 - Kolom kodepos zona diprioritaskan meskipun file juga memiliki `KODEPOS ASAL`, `KODEPOS TUJUAN`, atau `RUTE KANTOR`. Kodepos zona yang kosong harus dilengkapi secara manual.
 - Duplikat digabung berdasarkan pasangan kodepos zona **dan layanan**, sehingga PKH dan PE untuk zona yang sama tetap menjadi dua baris. Jika tarif berbeda untuk zona dan layanan yang sama, Tarif Minimum dan Tarif Kelipatan pada layanan tersebut dikosongkan serta diberi pesan berisi baris sumber. Isi kembali kedua tarif sebelum ekspor.
@@ -119,7 +120,7 @@ Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
 4. Pastikan custom domain `tarif.posnew.com` telah terpasang.
 5. Folder `functions/` harus ikut diunggah. Middleware akan mengalihkan `tarifmile.pages.dev` ke `tarif.posnew.com` sambil mempertahankan path dan query.
 
-HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261016-204`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
+HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261016-205`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
 
 ## Pengujian
 

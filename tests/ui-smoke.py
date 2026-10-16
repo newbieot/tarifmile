@@ -203,7 +203,7 @@ with sync_playwright() as p:
     for tariff_type, service_id, tariff, description in [('reguler', '420', '32400', 'PKH'), ('nextday', '411', '55200', 'PE')]:
         page.select_option('#importTariffType', tariff_type)
         page.set_input_files('#fileInput', str(xlsx))
-        page.wait_for_function("([price,service]) => { const first = document.querySelector('#tariffTableBody tr'); return document.querySelector('#importedMetric').textContent === '2' && first.querySelector('[data-field=minimumTariff]').value === price && first.querySelector('[data-field=serviceId]').value === service; }", arg=[tariff, service_id])
+        page.wait_for_function("([price,service,count]) => { const first = document.querySelector('#tariffTableBody tr'); return document.querySelector('#importedMetric').textContent === count && first.querySelector('[data-field=minimumTariff]').value === price && first.querySelector('[data-field=serviceId]').value === service; }", arg=[tariff, service_id, '2' if tariff_type == 'reguler' else '1'])
         first = page.locator('#tariffTableBody tr').first
         check(first.locator('[data-field="origin"]').input_value() == '29400', 'Zone origin column was not used')
         check(first.locator('[data-field="destination"]').input_value() == '10000', 'Zone destination column was not used')
@@ -211,7 +211,7 @@ with sync_playwright() as p:
         check(first.locator('[data-field="incrementTariff"]').input_value() == tariff, 'Zone increment tariff mismatch')
         check(page.locator('#duplicatesMetric').text_content() == '1', 'Zone duplicate count mismatch')
         check(f'Tarif {tariff_type.upper()}' in page.locator('#importSummaryText').text_content(), 'Selected tariff source missing from summary')
-    check(page.locator('#tariffTableBody tr').last.locator('[data-field="minimumTariff"]').input_value() == '0', 'NEXTDAY zero tariff was not preserved')
+    check(page.locator('#tariffTableBody tr').count() == 1, 'An unavailable NEXTDAY tariff created a PE row')
 
     # A conflicting tariff for the same zone must require manual correction.
     page.evaluate('window.XLSX._nextRows[3][6] = 60000')
@@ -227,23 +227,26 @@ with sync_playwright() as p:
       [],
       ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER', 'TARIF NEXTDAY',
        'ID PELANGGAN', 'Kode Salesforce PE', 'Kode Salesforce PKH'],
+      [29400, 10000, 32400, 0, 'AUTO-CUSTOMER', 897924, 898845],
       [29400, 10000, 32400, 55200, 'AUTO-CUSTOMER', 897924, 898845],
       [29400, 10000, 32400, 55200, 'AUTO-CUSTOMER', 897924, 898845],
       [29400, 14530, 44400, 0, 'AUTO-CUSTOMER', 897924, 898845]
     ]""")
     page.select_option('#importTariffType', 'both')
     page.set_input_files('#fileInput', str(xlsx))
-    page.wait_for_function("document.querySelector('#importedMetric').textContent === '4'")
+    page.wait_for_function("document.querySelector('#importedMetric').textContent === '3'")
     check(page.locator('#customerId').input_value() == 'AUTO-CUSTOMER', 'Customer ID was not imported')
     check(page.locator('#salesforceNumber').input_value() == '898845', 'PKH Salesforce was not imported')
     check(page.locator('#salesforcePe').input_value() == '897924', 'PE Salesforce was not imported')
     check(page.locator('#fieldGroupSalesforcePe').is_visible(), 'Per-service Salesforce fields are hidden')
     check(page.locator('#startDate').input_value() == '2026-10-16', 'Import start date mismatch')
     check(page.locator('#endDate').input_value() == '2029-09-30', 'Import end date mismatch')
-    check(page.locator('#tariffTableBody tr').count() == 4, 'Both services were not imported')
-    for index, days in enumerate(['4', '2', '4', '2']):
+    check(page.locator('#tariffTableBody tr').count() == 3, 'Unavailable PE routes should be omitted')
+    for index, days in enumerate(['4', '2', '4']):
         check(page.locator('#tariffTableBody tr').nth(index).locator('[data-field="slaDays"]').input_value() == days, 'Automatic service SLA mismatch')
     check(page.locator('#exportButton').is_enabled(), 'Automatic import should be ready without manual form edits')
+    check(page.locator('#tariffTableBody tr').nth(1).locator('[data-field="minimumTariff"]').input_value() == '55200', 'A zero duplicate erased an available PE tariff')
+    check('tanpa tarif NEXTDAY positif dilewati' in page.locator('#importSummaryText').text_content(), 'Unavailable PE summary missing')
     page.fill('#salesforcePe', '')
     check(page.locator('#exportButton').is_disabled(), 'Missing PE Salesforce must prevent export')
     page.fill('#salesforcePe', 'invalid')

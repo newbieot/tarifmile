@@ -203,6 +203,7 @@
       emptyRowsSkipped: 0,
       rowsRequiringReview: 0,
       invalidTariffRows: 0,
+      unavailablePeRowsSkipped: 0,
       conflictingTariffRoutes: 0,
       duplicateRoutes: []
     };
@@ -237,6 +238,10 @@
         : parseRoute(rawRoute);
       for (const channel of channels) {
         const tariff = parseTariffValue(sourceRow[channel.tariffIndex]);
+        if (channel.serviceId === 411 && (tariff === '' || tariff <= 0)) {
+          summary.unavailablePeRowsSkipped += 1;
+          continue;
+        }
         const routeKey = `${rawRoute}|${channel.serviceId || namespace.DEFAULTS.serviceId}`;
         const previous = seenRoutes.get(routeKey);
         if (previous) {

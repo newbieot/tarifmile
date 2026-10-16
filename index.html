@@ -27,7 +27,7 @@
   <meta name="twitter:description" content="Impor, validasi, dan ekspor workbook tarif negotiable siap MILE langsung di browser.">
   <meta name="twitter:image" content="https://tarif.posnew.com/og-cover.png">
   <link rel="preconnect" href="https://cdn.sheetjs.com" crossorigin>
-  <link rel="stylesheet" href="/assets/css/app.css?v=20261016-204">
+  <link rel="stylesheet" href="/assets/css/app.css?v=20261016-205">
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -144,7 +144,7 @@
               <option value="reguler">REGULER — PKH</option>
               <option value="nextday">NEXTDAY — PE</option>
             </select>
-            <small class="field-hint" id="importTariffTypeHelp">Sekali unggah memuat kedua tarif dari kodepos zona. REGULER = PKH (SLA 4 hari), NEXTDAY = PE (SLA 2 hari). Masa berlaku otomatis 16 Oktober 2026–30 September 2029.</small>
+            <small class="field-hint" id="importTariffTypeHelp">Sekali unggah memuat tarif dari kodepos zona. REGULER = PKH (SLA 4 hari), NEXTDAY = PE (SLA 2 hari). Baris PE hanya dibuat jika tarif NEXTDAY lebih dari 0. Masa berlaku otomatis 16 Oktober 2026–30 September 2029.</small>
           </div>
 
           <button class="dropzone-area" id="dropzone" type="button" aria-describedby="uploadHelp">
@@ -352,10 +352,10 @@
 
   <noscript><div class="noscript-message">JavaScript harus diaktifkan untuk menggunakan Pembuat Tarif Negotiable.</div></noscript>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
-  <script src="/assets/js/constants.js?v=20261016-204" defer></script>
-  <script src="/assets/js/importer.js?v=20261016-204" defer></script>
-  <script src="/assets/js/validation.js?v=20261016-204" defer></script>
-  <script src="/assets/js/export.js?v=20261016-204" defer></script>
-  <script src="/assets/js/app.js?v=20261016-204" defer></script>
+  <script src="/assets/js/constants.js?v=20261016-205" defer></script>
+  <script src="/assets/js/importer.js?v=20261016-205" defer></script>
+  <script src="/assets/js/validation.js?v=20261016-205" defer></script>
+  <script src="/assets/js/export.js?v=20261016-205" defer></script>
+  <script src="/assets/js/app.js?v=20261016-205" defer></script>
 </body>
 </html>

@@ -153,7 +153,7 @@ test('KEPRI REGULER import uses zone postcodes, PKH, and the regular tariff', ()
   assert.deepEqual(parsed.summary.duplicateRoutes, ['29400|10000']);
 });
 
-test('KEPRI NEXTDAY import uses PE and preserves zero tariffs', () => {
+test('KEPRI NEXTDAY import uses PE and omits unavailable tariffs', () => {
   const parsed = T.parseSourceRows(ZONE_SOURCE_ROWS, { tariffType: 'nextday' });
   assert.equal(parsed.header.indexes.tariff, 6);
   assert.equal(parsed.rows[0].minimumTariff, 55200);
@@ -161,8 +161,8 @@ test('KEPRI NEXTDAY import uses PE and preserves zero tariffs', () => {
   assert.equal(parsed.rows[0].serviceId, 411);
   assert.equal(parsed.rows[0].slaDays, 2);
   assert.equal(parsed.rows[0].description, 'PE');
-  assert.equal(parsed.rows[1].minimumTariff, 0);
-  assert.equal(parsed.rows[1].importNeedsReview, false);
+  assert.equal(parsed.rows.length, 1);
+  assert.equal(parsed.summary.unavailablePeRowsSkipped, 1);
 });
 
 test('zone columns take precedence over regular postcodes and RUTE KANTOR', () => {
@@ -251,15 +251,15 @@ test('the selected zone tariff exports its mapped service and zone codes', () =>
 test('one upload imports both services with customer data, service Salesforce, and fixed dates', () => {
   const result = T.parseSourceRows(ZONE_SOURCE_ROWS);
   assert.equal(result.header.tariffType, 'both');
-  assert.equal(result.rows.length, 4);
+  assert.equal(result.rows.length, 3);
   assert.equal(result.summary.sourceRowsFound, 3);
   assert.equal(result.summary.duplicatesSkipped, 2);
-  assert.deepEqual(result.summary.serviceCounts, { PKH: 2, PE: 2 });
+  assert.deepEqual(result.summary.serviceCounts, { PKH: 2, PE: 1 });
   assert.deepEqual(result.customerData, {
     customerId: 'CUSTOMER', startDate: '2026-10-16', endDate: '2029-09-30',
     salesforceByService: { 420: '898845', 411: '897924' }
   });
-  assert.deepEqual(result.rows.map((row) => [row.serviceId, row.slaDays]), [[420,4],[411,2],[420,4],[411,2]]);
+  assert.deepEqual(result.rows.map((row) => [row.serviceId, row.slaDays]), [[420,4],[411,2],[420,4]]);
   assert.equal(T.validateRows(result.rows).counts.duplicates, 0);
   assert.equal(T.validateWorkspace(result.customerData, result.rows).exportable, true);
   assert.equal(T.getWorkspaceFilename(result.customerData, result.rows), 'Tarif_Negotiable_898845_897924.xlsx');
@@ -280,7 +280,41 @@ test('mixed service exports preserve their own Salesforce, tariff, SLA, and date
   }
   assert.equal(JSON.parse(records[0].tariff_formula_data).base_tariff_1, 32400);
   assert.equal(JSON.parse(records[1].tariff_formula_data).base_tariff_1, 55200);
-  assert.equal(JSON.parse(records[3].tariff_formula_data).base_tariff_1, 0);
+  assert.equal(records.some((record) => record.service_id === 411 && record.tariff_to_code === '14530'), false);
+});
+
+test('PE deduplication uses a positive NEXTDAY tariff regardless of empty or zero row order', () => {
+  for (const tariffs of [[0, '', 55200, 0], [55200, 0, '', 55200]]) {
+    const parsed = T.parseSourceRows([
+      ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER', 'TARIF NEXTDAY'],
+      ...tariffs.map((tariff) => [29400, 10000, 32400, tariff])
+    ]);
+    const pe = parsed.rows.find((row) => row.serviceId === 411);
+    const pkh = parsed.rows.find((row) => row.serviceId === 420);
+    assert.equal(parsed.rows.length, 2);
+    assert.equal(pe.minimumTariff, 55200);
+    assert.equal(pe.incrementTariff, 55200);
+    assert.equal(pe.importNeedsReview, false);
+    assert.equal(pkh.minimumTariff, 32400);
+    assert.equal(parsed.summary.conflictingTariffRoutes, 0);
+    assert.equal(T.validateRows(parsed.rows).counts.critical, 0);
+  }
+});
+
+test('routes without any available PE tariff only create PKH rows', () => {
+  const parsed = T.parseSourceRows([
+    ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER', 'TARIF NEXTDAY'],
+    [29400, 10000, 32400, 0],
+    [29400, 10000, 32400, ''],
+    [29400, 14530, 44400, 'Rp 0']
+  ]);
+  assert.deepEqual(parsed.rows.map((row) => row.serviceId), [420, 420]);
+  assert.equal(parsed.summary.unavailablePeRowsSkipped, 3);
+  assert.deepEqual(parsed.summary.serviceCounts, { PKH: 2 });
+  assert.throws(() => T.parseSourceRows([
+    ['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF NEXTDAY'],
+    [29400, 10000, 0]
+  ], { tariffType: 'nextday' }), (error) => error.code === 'NO_VALID_ROUTES');
 });
 
 test('Salesforce validation checks each active service and never substitutes PKH for a missing PE code', () => {

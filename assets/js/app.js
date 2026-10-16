@@ -622,7 +622,8 @@
       ? ` PKH: ${summary.serviceCounts.PKH || 0} rute, PE: ${summary.serviceCounts.PE || 0} rute.`
       : tariffSource ? ` Tarif ${tariffSource.label} untuk layanan ${tariffSource.serviceName}.` : '';
     const conflictNote = summary.conflictingTariffRoutes ? ` ${summary.conflictingTariffRoutes} rute zona memiliki tarif berbeda; isi kembali tarifnya sebelum ekspor.` : '';
-    dom.importSummaryText.textContent = `${summary.routesImported} rute tarif diimpor. ${summary.duplicatesSkipped} duplikat dan ${summary.emptyRowsSkipped} baris kosong dilewati.${skipped === 0 ? ' Tidak ada baris sumber yang dilewati.' : ''}${sourceNote}${tariffNote}${conflictNote}`;
+    const peNote = summary.unavailablePeRowsSkipped ? ' Baris PE tanpa tarif NEXTDAY positif dilewati; tarif PE yang terisi pada rute duplikat tetap dipakai.' : '';
+    dom.importSummaryText.textContent = `${summary.routesImported} rute tarif diimpor. ${summary.duplicatesSkipped} duplikat dan ${summary.emptyRowsSkipped} baris kosong dilewati.${skipped === 0 && !summary.unavailablePeRowsSkipped ? ' Tidak ada baris sumber yang dilewati.' : ''}${sourceNote}${tariffNote}${peNote}${conflictNote}`;
     dom.toggleDuplicatesButton.hidden = summary.duplicateRoutes.length === 0;
     dom.duplicateList.hidden = true;
     dom.duplicateList.replaceChildren();

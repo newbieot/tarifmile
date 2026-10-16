@@ -2,6 +2,7 @@
 
 ## 2026-10-16
 
+- Rute PE hanya diimpor jika tarif NEXTDAY positif. Nilai kosong atau 0 pada duplikat tidak lagi mengosongkan tarif PE yang terisi. Cache key aset terbaru `20261016-205`.
 - Satu unggahan otomatis memuat PKH dan PE sekaligus, dengan Salesforce masing-masing pada setiap baris ekspor.
 - ID Pelanggan dan kode Salesforce PKH/PE otomatis dibaca dari Excel. Data pelanggan yang tidak konsisten ditolak.
 - Tanggal hasil impor otomatis 16 Oktober 2026 sampai 30 September 2029.
