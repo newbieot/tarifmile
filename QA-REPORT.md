@@ -1,5 +1,15 @@
 # Laporan Quality Assurance
 
+## Pembaruan KRT — 19 Oktober 2026
+
+- 43 tes regresi lulus, termasuk validasi Base Tariff/No IO, kode KRT, impor KRT dengan deduplikasi, dan pemisahan skema workbook.
+- 125 pemeriksaan UI lulus di Chromium/Chrome, termasuk pergantian layanan, input KRT di desktop/mobile, pemblokiran ekspor saat Base Tariff/SLA/IO belum lengkap, pengosongan IO setelah impor baru, dan dua unduhan untuk layanan campuran.
+- Roundtrip XLSX asli memakai SheetJS `0.20.3` lulus: workbook biasa 13 kolom dan workbook KRT 14 kolom dapat dibuat lalu dibaca ulang. Kodepos dan IO berawalan nol tetap teks; kode layanan pelanggan dan subservice KRT tetap berbeda.
+- Dua pemeriksaan middleware redirect lulus. Cache key aset KRT: `20261019-207`.
+- Tampilan KRT desktop dan mobile diperiksa secara visual. Pemeriksaan ini memastikan struktur file dan perilaku aplikasi; impor ke sistem MILE tidak dilakukan.
+
+## Audit awal
+
 Tanggal: 2026-08-14  
 Versi: 2.0.0
 

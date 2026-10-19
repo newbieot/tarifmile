@@ -75,7 +75,7 @@ Layanan dan Formula ID otomatis:
 | KBM | 481 | Tidak tersedia |
 | Q9 | 408 | 1288 |
 | PJM | 453 | 1672 |
-| KRT | 470 | 1701 |
+| KRT | 470 | 1644 |
 | EC3 | 446 | 1288 |
 | PPB_SEKOGRAM | 483 | 1711 |
 | PPB_KARTUPOS | 485 | 1711 |
@@ -87,7 +87,21 @@ Layanan dan Formula ID otomatis:
 
 Untuk KBM, Formula ID otomatis tidak tersedia karena tabel referensi menampilkan tanda `-`. Jika opsi otomatis dipilih, ekspor akan ditahan sampai pengguna memilih `1644 (PJE)` atau mengganti layanan.
 
-## Formula JSON
+## Layanan KRT (CBA)
+
+Pilih **KRT — Base Tariff (CBA)** sebelum impor untuk memuat seluruh rute sebagai KRT. Kolom `TARIF`, atau `TARIF REGULER` pada format zona, mengisi Base Tariff. Layanan juga dapat diganti menjadi KRT pada setiap baris.
+
+KRT menggunakan Service ID `470`, kode layanan pelanggan `915903`, subservice `916479`, dan Formula ID `1644`. Formulir Salesforce tidak diperlukan untuk KRT. Tabel hanya meminta **Base Tariff**, tanpa berat, tarif minimum, atau tarif kelipatan. SLA hari tetap wajib diisi.
+
+**No IO KRT** wajib dimasukkan pengguna dan berlaku untuk semua rute KRT dalam ekspor. Impor file baru mengosongkan No IO agar tidak memakai IO dari unggahan sebelumnya. Layanan lain tidak memerlukan No IO.
+
+KRT memakai JSON berikut, dengan Base Tariff berupa teks sesuai template CBA:
+
+```json
+{"base_tariff":"10000","kdlayanan_pelanggan":915903}
+```
+
+## Formula JSON layanan lain
 
 `tariff_formula_data` diekspor sebagai string JSON:
 
@@ -111,6 +125,8 @@ Untuk KBM, Formula ID otomatis tidak tersedia karena tabel referensi menampilkan
 - Kode asal, tujuan, tanggal, kode pelanggan, deskripsi, dan JSON ditulis sebagai teks
 - Service ID, SLA, Formula ID, dan `disableTariff` ditulis sebagai angka
 
+KRT diunduh sebagai `Tarif_KRT_916479.xlsx`, sheet `TariffCbaCustomer`, dengan 14 kolom: 13 header standar di atas diikuti `internal_order`. No IO ditulis sebagai teks agar nol awal tetap utuh. Jika terdapat KRT dan layanan lain, aplikasi menyiapkan dan mengunduh dua file terpisah; pratinjau dan konfirmasi menampilkan kedua nama file. Tombol unduh kembali mengunduh kedua file tersebut.
+
 ## Deployment Cloudflare Pages
 
 Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
@@ -121,16 +137,18 @@ Repositori ini dirancang untuk Cloudflare Pages melalui integrasi GitHub.
 4. Pastikan custom domain `tarif.posnew.com` telah terpasang.
 5. Folder `functions/` harus ikut diunggah. Middleware akan mengalihkan `tarifmile.pages.dev` ke `tarif.posnew.com` sambil mempertahankan path dan query.
 
-HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261016-206`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
+HTML menggunakan `Cache-Control: no-store`, sedangkan URL CSS/JavaScript memakai versi `20261019-207`. Kombinasi ini memastikan HTML terbaru memanggil aset versi baru setelah deployment.
 
 ## Pengujian
 
 ```bash
 node tests/regression.cjs
+node tests/middleware.mjs
 python tests/ui-smoke.py
+node tests/workbook-roundtrip.cjs <path-to-xlsx.full.min.js>
 ```
 
-Smoke test memerlukan Playwright dan browser Chromium.
+Smoke test memerlukan Playwright dan browser Chromium/Chrome/Edge. Pengujian roundtrip memakai build SheetJS `0.20.3` yang sama dengan aplikasi untuk membuat dan membaca ulang XLSX asli.
 
 ## Struktur penting
 

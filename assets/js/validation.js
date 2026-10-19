@@ -21,13 +21,18 @@
     const endDate = String(values.endDate ?? '').trim();
     const errors = {};
     const serviceIds = values.serviceIds || Object.keys(values.salesforceByService || {});
+    const standardServiceIds = serviceIds.filter((id) => Number(id) !== namespace.KRT.serviceId);
+    const hasKrt = serviceIds.some((id) => Number(id) === namespace.KRT.serviceId);
+    const onlyKrt = hasKrt && !standardServiceIds.length;
     const salesforceFields = values.salesforceByService
-      ? [...new Set(serviceIds.map((id) => Number(id) === 411 ? 'salesforcePe' : 'salesforceNumber'))]
+      ? [...new Set(standardServiceIds.map((id) => Number(id) === 411 ? 'salesforcePe' : 'salesforceNumber'))]
         .map((field) => ({ field, value: field === 'salesforcePe'
           ? String(values.salesforceByService[411] ?? '').trim() : salesforceNumber }))
-      : [{ field: 'salesforceNumber', value: salesforceNumber }];
+      : onlyKrt ? [] : [{ field: 'salesforceNumber', value: salesforceNumber }];
+    const internalOrder = String(values.internalOrder ?? '').trim();
 
     if (!customerId) errors.customerId = 'ID Pelanggan wajib diisi.';
+    if (hasKrt && !internalOrder) errors.internalOrder = 'No IO wajib diisi untuk layanan KRT.';
     salesforceFields.forEach(({ field, value }) => {
       if (!value) errors[field] = 'Nomor Salesforce wajib diisi.';
       else if (!/[0-9]/.test(value)) errors[field] = 'Nomor Salesforce harus memuat minimal satu angka.';
@@ -39,6 +44,7 @@
     }
 
     const fieldValues = [customerId, startDate, endDate, ...salesforceFields.map(({ value }) => value)];
+    if (hasKrt) fieldValues.push(internalOrder);
     const completedFields = fieldValues.filter(Boolean).length;
     return {
       valid: Object.keys(errors).length === 0,
@@ -76,6 +82,8 @@
     const incrementWeight = toFiniteNumber(row.incrementWeight);
     const incrementTariff = toFiniteNumber(row.incrementTariff);
     const description = String(row.description ?? '').trim();
+    const krt = namespace.isKrt(row);
+    const baseTariff = isBlank(row.baseTariff) ? Number.NaN : toFiniteNumber(row.baseTariff);
 
     if (!origin) errors.origin = 'Asal wajib diisi.';
     else if (!POSTCODE_LIKE_PATTERN.test(origin)) errors.origin = 'Gunakan kode 3–12 karakter berupa huruf, angka, atau tanda hubung.';
@@ -89,17 +97,22 @@
     if (!Number.isFinite(slaDays)) errors.slaDays = 'SLA wajib diisi.';
     else if (!Number.isInteger(slaDays) || slaDays <= 0) errors.slaDays = 'SLA harus berupa hari bulat lebih dari 0.';
 
-    if (!Number.isFinite(minimumWeight)) errors.minimumWeight = 'Berat minimum wajib diisi.';
-    else if (minimumWeight <= 0) errors.minimumWeight = 'Berat minimum harus lebih dari 0.';
+    if (krt) {
+      if (!Number.isFinite(baseTariff)) errors.baseTariff = 'Base Tariff wajib diisi.';
+      else if (baseTariff < 0) errors.baseTariff = 'Base Tariff tidak boleh negatif.';
+    } else {
+      if (!Number.isFinite(minimumWeight)) errors.minimumWeight = 'Berat minimum wajib diisi.';
+      else if (minimumWeight <= 0) errors.minimumWeight = 'Berat minimum harus lebih dari 0.';
 
-    if (!Number.isFinite(minimumTariff)) errors.minimumTariff = 'Tarif minimum wajib diisi.';
-    else if (minimumTariff < 0) errors.minimumTariff = 'Tarif minimum tidak boleh negatif.';
+      if (!Number.isFinite(minimumTariff)) errors.minimumTariff = 'Tarif minimum wajib diisi.';
+      else if (minimumTariff < 0) errors.minimumTariff = 'Tarif minimum tidak boleh negatif.';
 
-    if (!Number.isFinite(incrementWeight)) errors.incrementWeight = 'Berat kelipatan wajib diisi.';
-    else if (incrementWeight <= 0) errors.incrementWeight = 'Berat kelipatan harus lebih dari 0.';
+      if (!Number.isFinite(incrementWeight)) errors.incrementWeight = 'Berat kelipatan wajib diisi.';
+      else if (incrementWeight <= 0) errors.incrementWeight = 'Berat kelipatan harus lebih dari 0.';
 
-    if (!Number.isFinite(incrementTariff)) errors.incrementTariff = 'Tarif kelipatan wajib diisi.';
-    else if (incrementTariff < 0) errors.incrementTariff = 'Tarif kelipatan tidak boleh negatif.';
+      if (!Number.isFinite(incrementTariff)) errors.incrementTariff = 'Tarif kelipatan wajib diisi.';
+      else if (incrementTariff < 0) errors.incrementTariff = 'Tarif kelipatan tidak boleh negatif.';
+    }
 
     if (!description) errors.description = 'Deskripsi wajib diisi.';
 
@@ -135,6 +148,7 @@
         slaDays,
         minimumWeight,
         minimumTariff,
+        baseTariff,
         incrementWeight,
         incrementTariff,
         description

@@ -32,7 +32,7 @@ test('service IDs and reference formula mappings remain exact', () => {
   assert.deepEqual(T.SERVICES.map((s) => [s.name, s.id, s.formulaId]), [
     ['PKH', 420, 1288], ['PE', 411, 1288], ['PJE', 428, 1644],
     ['PJB', 452, 1669], ['KBM', 481, null], ['Q9', 408, 1288],
-    ['PJM', 453, 1672], ['KRT', 470, 1701], ['EC3', 446, 1288],
+    ['PJM', 453, 1672], ['KRT', 470, 1644], ['EC3', 446, 1288],
     ['PPB_SEKOGRAM', 483, 1711], ['PPB_KARTUPOS', 485, 1711],
     ['PPB_PKT', 477, 1711], ['PPB_SRT', 476, 1711], ['DG', 466, 1678],
     ['VG', 465, 1677], ['3PE', 464, 1648], ['Q23', 463, 1648],
@@ -72,7 +72,7 @@ test('formula ID is automatic per service with an optional PJE override', () => 
   });
   assert.equal(T.resolveFormulaId({ serviceId: 420, formulaIdOverride: '' }), 1288);
   assert.equal(T.resolveFormulaId({ serviceId: 452, formulaIdOverride: '' }), 1669);
-  assert.equal(T.resolveFormulaId({ serviceId: 470, formulaIdOverride: '' }), 1701);
+  assert.equal(T.resolveFormulaId({ serviceId: 470, formulaIdOverride: '' }), 1644);
   assert.equal(T.resolveFormulaId({ serviceId: 481, formulaIdOverride: 1644 }), 1644);
   assert.equal(Number.isNaN(T.resolveFormulaId({ serviceId: 481, formulaIdOverride: '' })), true);
 });
@@ -477,6 +477,92 @@ test('workspace is exportable only after critical issues are resolved', () => {
   row.destination = '';
   const invalid = T.validateWorkspace({ customerId:'ABC', salesforceNumber:'914372', startDate:'2026-01-01', endDate:'2026-12-31' }, [row]);
   assert.equal(invalid.exportable, false);
+});
+
+const KRT_GLOBALS = { customerId: 'customer', internalOrder: ' 00100021859 ', startDate: '2026-10-19', endDate: '2029-09-30' };
+function krtRow(overrides = {}) {
+  return T.createDefaultRow({ origin: '01234', destination: '00110', serviceId: 470, slaDays: 14,
+    baseTariff: 10000, minimumWeight: '', minimumTariff: '', incrementWeight: '', incrementTariff: '', description: 'KRT CBA', ...overrides });
+}
+
+test('KRT requires IO and Base Tariff without Salesforce, weights, or incremental tariffs', () => {
+  assert.equal(T.validateWorkspace(KRT_GLOBALS, [krtRow()]).exportable, true);
+  for (const internalOrder of [undefined, '', '   ']) {
+    assert.equal(T.validateWorkspace({ ...KRT_GLOBALS, internalOrder }, [krtRow()]).exportable, false);
+    assert.throws(() => T.buildExportRecord({ ...KRT_GLOBALS, internalOrder }, krtRow()), /No IO wajib/);
+  }
+  for (const baseTariff of ['', '   ', -1, 'invalid', Infinity]) {
+    assert.equal(T.validateWorkspace(KRT_GLOBALS, [krtRow({ baseTariff })]).exportable, false);
+    assert.throws(() => T.buildFormula(krtRow({ baseTariff })), /Base Tariff/);
+  }
+  assert.equal(T.validateWorkspace(KRT_GLOBALS, [krtRow({ baseTariff: 0 })]).exportable, true);
+});
+
+test('KRT exports the supplied codes, base_tariff JSON, and IO as text', () => {
+  const record = T.buildExportRecord({ ...KRT_GLOBALS, salesforceNumber: 'WRONG', salesforceByService: { 470: 'WRONG' } }, krtRow({ formulaIdOverride: '' }));
+  assert.equal(record.service_id, 470);
+  assert.equal(record.tariff_formula_id, 1644);
+  assert.equal(record.tariff_sub_service_code, '916479');
+  assert.equal(record.internal_order, '00100021859');
+  assert.deepEqual(JSON.parse(record.tariff_formula_data), { base_tariff: '10000', kdlayanan_pelanggan: 915903 });
+  assert.equal(record.tariff_from_code, '01234');
+  assert.equal(record.tariff_sla_hours, 336);
+});
+
+test('KRT and standard rows each require their own inputs in a mixed workspace', () => {
+  const standard = krtRow({ serviceId: 420, minimumWeight: 1000, minimumTariff: 10000, incrementWeight: 1000, incrementTariff: 9000 });
+  const globals = { ...KRT_GLOBALS, salesforceNumber: 'SF-123' };
+  assert.equal(T.validateWorkspace(globals, [standard, krtRow()]).exportable, true);
+  assert.equal(T.validateWorkspace(KRT_GLOBALS, [standard, krtRow()]).exportable, false);
+  assert.equal(Object.hasOwn(T.buildExportRecord(globals, standard), 'internal_order'), false);
+  assert.equal(JSON.parse(T.buildExportRecord(globals, standard).tariff_formula_data).kdlayanan_pelanggan, 123);
+  assert.equal(T.validateWorkspace({ ...globals, internalOrder: '' }, [standard]).exportable, true);
+  assert.equal(T.validateWorkspace({ ...KRT_GLOBALS, salesforceByService: { 420: '', 411: '' } }, [krtRow()]).exportable, true);
+});
+
+test('KRT import assigns Base Tariff and retains the highest duplicate tariff', () => {
+  for (const source of [
+    [['RUTE KANTOR', 'TARIF', 'Layanan'], ['01234|00110', 10000, 'CBA'], ['01234|00110', 12000, 'CBA']],
+    [['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF REGULER', 'TARIF NEXTDAY'], ['01234', '00110', 10000, 99000], ['01234', '00110', 12000, 99000]],
+    [['KODEPOS ASAL ZONA', 'KODEPOS TUJUAN ZONA', 'TARIF', 'Layanan'], ['01234', '00110', 10000, 'CBA'], ['01234', '00110', 12000, 'CBA']]
+  ]) {
+    const result = T.parseSourceRows(source, { tariffType: 'krt' });
+    assert.equal(result.rows.length, 1);
+    assert.equal(result.rows[0].serviceId, 470);
+    assert.equal(result.rows[0].baseTariff, 12000);
+    assert.equal(result.rows[0].slaDays, '');
+    assert.equal(result.summary.conflictingTariffRoutes, 1);
+    result.rows[0].slaDays = 14;
+    assert.equal(T.validateWorkspace(KRT_GLOBALS, result.rows).exportable, true);
+  }
+});
+
+test('KRT workbook has 14 columns and is separated from standard 13-column exports', () => {
+  globalThis.XLSX = { utils: {
+    encode_cell: ({ r, c }) => String.fromCharCode(65 + c) + (r + 1),
+    encode_range(range) { return this.encode_cell(range.s) + ':' + this.encode_cell(range.e); },
+    book_new: () => ({ SheetNames: [], Sheets: {} }),
+    book_append_sheet(wb, ws, name) { wb.SheetNames.push(name); wb.Sheets[name] = ws; }
+  }, write: () => new Uint8Array([80, 75]).buffer };
+  const standard = krtRow({ serviceId: 420, minimumWeight: 1000, minimumTariff: 10000, incrementWeight: 1000, incrementTariff: 9000 });
+  const globals = { ...KRT_GLOBALS, salesforceNumber: 'SF-123' };
+  const outputs = T.createWorkbookBlobs(globals, [krtRow(), standard]);
+  assert.equal(outputs.length, 2);
+  assert.equal(outputs[0].filename, 'Tarif_Negotiable_SF-123.xlsx');
+  assert.equal(outputs[1].filename, 'Tarif_KRT_916479.xlsx');
+  const standardSheet = outputs[0].workbook.Sheets.TariffCustomer;
+  const krtSheet = outputs[1].workbook.Sheets.TariffCbaCustomer;
+  assert.equal(standardSheet['!ref'], 'A1:M2');
+  assert.equal(standardSheet.N1, undefined);
+  assert.equal(krtSheet['!ref'], 'A1:N2');
+  assert.deepEqual(T.KRT_OUTPUT_HEADERS, [...T.OUTPUT_HEADERS, 'internal_order']);
+  T.KRT_OUTPUT_HEADERS.forEach((header, c) => assert.equal(krtSheet[String.fromCharCode(65 + c) + '1'].v, header));
+  assert.deepEqual(krtSheet.N2, { v: '00100021859', t: 's' });
+  assert.deepEqual(krtSheet.L2, { v: '916479', t: 's' });
+  assert.deepEqual(krtSheet.C2, { v: 470, t: 'n' });
+  assert.equal(krtSheet.A2.t, 's');
+  assert.throws(() => T.buildWorkbook(globals, [standard, krtRow()]), /workbook terpisah/);
+  assert.throws(() => T.createWorkbookBlobs({ ...globals, internalOrder: '' }, [standard, krtRow()]), /No IO wajib/);
 });
 
 console.log(`\n${passed} regression tests passed.`);

@@ -47,8 +47,8 @@
 
   function findHeaderRow(rawRows, options) {
     const tariffType = (options && options.tariffType) || 'both';
-    if (tariffType !== 'both' && !Object.prototype.hasOwnProperty.call(ZONE_TARIFF_TYPES, tariffType)) {
-      const error = new Error('Pilih PKH dan PE, REGULER (PKH), atau NEXTDAY (PE).');
+    if (tariffType !== 'both' && tariffType !== 'krt' && !Object.prototype.hasOwnProperty.call(ZONE_TARIFF_TYPES, tariffType)) {
+      const error = new Error('Pilih PKH dan PE, REGULER (PKH), NEXTDAY (PE), atau KRT.');
       error.code = 'INVALID_TARIFF_TYPE';
       throw error;
     }
@@ -64,17 +64,18 @@
       const customerIndexes = getCustomerIndexes(normalized);
       if (origin >= 0 && destination >= 0) {
         const channels = Object.entries(ZONE_TARIFF_TYPES)
-          .filter(([type]) => tariffType === 'both' || type === tariffType)
+          .filter(([type]) => tariffType === 'both' || type === (tariffType === 'krt' ? 'reguler' : tariffType))
           .map(([type, config]) => ({ ...config, type,
             tariffIndex: normalized.findIndex((name) => /^TARIF\b/.test(name) && name.split(' ').includes(config.label)) }))
-          .filter((channel) => channel.tariffIndex >= 0);
+          .filter((channel) => channel.tariffIndex >= 0)
+          .map((channel) => tariffType === 'krt' ? { ...channel, type: 'krt', serviceId: namespace.KRT.serviceId, serviceName: 'KRT', slaDays: '' } : channel);
         const tariff = channels.length ? channels[0].tariffIndex : normalized.indexOf('TARIF');
         const serviceDescription = normalized.indexOf('LAYANAN');
         if (tariff >= 0 && (channels.length || serviceDescription >= 0)) {
           return {
             found: true, rowIndex, format: 'zone',
             tariffType: channels.length > 1 ? 'both' : channels.length ? channels[0].type : null,
-            channels, customerIndexes,
+            channels: tariffType === 'krt' && !channels.length ? [{ type: 'krt', tariffIndex: tariff, serviceId: namespace.KRT.serviceId, serviceName: 'KRT', slaDays: '' }] : channels, customerIndexes,
             indexes: { route: -1, origin, destination, tariff, serviceDescription },
             normalizedHeaders: normalized
           };
@@ -87,7 +88,8 @@
         serviceDescription: normalized.indexOf(REQUIRED_HEADERS[2])
       };
       if (indexes.route >= 0 && indexes.tariff >= 0 && indexes.serviceDescription >= 0) {
-        return { found: true, rowIndex, indexes, customerIndexes, normalizedHeaders: normalized };
+        return { found: true, rowIndex, indexes, customerIndexes, normalizedHeaders: normalized,
+          ...(tariffType === 'krt' ? { tariffType: 'krt', channels: [{ type: 'krt', tariffIndex: indexes.tariff, serviceId: namespace.KRT.serviceId, serviceName: 'KRT', slaDays: '' }] } : {}) };
       }
     }
 
@@ -255,6 +257,7 @@
             previous.tariffRowNumber = index + 1;
             previous.row.minimumTariff = tariff;
             previous.row.incrementTariff = tariff;
+            if (namespace.isKrt(previous.row)) previous.row.baseTariff = tariff;
             previous.row.importReviewMessage = previous.row.importReviewMessage.replace('Nilai tarif impor tidak dapat dibaca sebagai angka.', '').trim();
             previous.row.importNeedsReview = Boolean(previous.row.importReviewMessage);
           }
@@ -273,6 +276,7 @@
               previous.tariffRowNumber = index + 1;
               previous.row.minimumTariff = tariff;
               previous.row.incrementTariff = tariff;
+              if (namespace.isKrt(previous.row)) previous.row.baseTariff = tariff;
             }
             if (firstDifference || higherTariff) {
               previous.row.importNeedsReview = true;
@@ -299,6 +303,7 @@
           ...(channel.serviceId ? { serviceId: channel.serviceId, slaDays: channel.slaDays } : {}),
           minimumTariff: tariff,
           incrementTariff: tariff,
+          ...(channel.serviceId === namespace.KRT.serviceId ? { baseTariff: tariff } : {}),
           description: serviceDescription,
           importedRouteRaw: route.raw,
           importNeedsReview: reviewMessages.length > 0,

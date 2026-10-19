@@ -27,7 +27,7 @@
   <meta name="twitter:description" content="Impor, validasi, dan ekspor workbook tarif negotiable siap MILE langsung di browser.">
   <meta name="twitter:image" content="https://tarif.posnew.com/og-cover.png">
   <link rel="preconnect" href="https://cdn.sheetjs.com" crossorigin>
-  <link rel="stylesheet" href="/assets/css/app.css?v=20261016-206">
+  <link rel="stylesheet" href="/assets/css/app.css?v=20261019-207">
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -117,6 +117,12 @@
               <span class="field-hint" id="salesforcePeHelp">Dibaca dari Kode Salesforce PE; digunakan untuk layanan PE.</span>
               <span class="field-error" id="salesforcePeError"></span>
             </div>
+            <div class="form-group full-width" id="fieldGroupInternalOrder" hidden>
+              <label for="internalOrder">No IO KRT <span>Wajib untuk KRT</span></label>
+              <input id="internalOrder" type="text" autocomplete="off" spellcheck="false" placeholder="Masukkan No IO" aria-describedby="internalOrderHelp internalOrderError">
+              <span class="field-hint" id="internalOrderHelp">Berlaku untuk semua rute KRT. Service ID 470 · Kode layanan pelanggan 915903 · Subservice 916479 · Formula ID 1644.</span>
+              <span class="field-error" id="internalOrderError"></span>
+            </div>
             <div class="form-group" id="fieldGroupStart">
               <label for="startDate">Tanggal Mulai Berlaku <span>Wajib</span></label>
               <input id="startDate" type="date" aria-describedby="startHelp startError">
@@ -138,13 +144,14 @@
           </div>
 
           <div class="form-group import-options">
-            <label for="importTariffType">Tarif pada format zona</label>
+            <label for="importTariffType">Layanan impor</label>
             <select id="importTariffType" aria-describedby="importTariffTypeHelp">
               <option value="both">PKH dan PE sekaligus (otomatis)</option>
               <option value="reguler">REGULER — PKH</option>
               <option value="nextday">NEXTDAY — PE</option>
+              <option value="krt">KRT — Base Tariff (CBA)</option>
             </select>
-            <small class="field-hint" id="importTariffTypeHelp">Sekali unggah memuat tarif dari kodepos zona. REGULER = PKH (SLA 4 hari), NEXTDAY = PE (SLA 2 hari). Baris PE hanya dibuat jika tarif NEXTDAY lebih dari 0. Duplikat memakai tarif tertinggi dan perbedaan harga diberi peringatan. Masa berlaku otomatis 16 Oktober 2026–30 September 2029.</small>
+            <small class="field-hint" id="importTariffTypeHelp">REGULER = PKH (SLA 4 hari), NEXTDAY = PE (SLA 2 hari, tarif harus positif). KRT memakai kolom TARIF, atau TARIF REGULER pada format zona, sebagai Base Tariff; isi SLA dan No IO. Duplikat memakai tarif tertinggi. Masa berlaku otomatis 16 Oktober 2026–30 September 2029.</small>
           </div>
 
           <button class="dropzone-area" id="dropzone" type="button" aria-describedby="uploadHelp">
@@ -257,10 +264,10 @@
                   <th>Layanan</th>
                   <th>Formula ID</th>
                   <th>SLA (hari)</th>
-                  <th>Berat Minimum</th>
-                  <th>Tarif Minimum</th>
-                  <th>Berat Kelipatan</th>
-                  <th>Tarif Kelipatan</th>
+                  <th class="standard-tariff-column">Berat Minimum</th>
+                  <th id="primaryTariffHeader">Tarif Minimum</th>
+                  <th class="standard-tariff-column">Berat Kelipatan</th>
+                  <th class="standard-tariff-column">Tarif Kelipatan</th>
                   <th>Deskripsi</th>
                   <th>Tindakan</th>
                 </tr>
@@ -283,7 +290,7 @@
               <div class="preview-grid" id="previewGrid"></div>
               <div class="preview-table-wrap">
                 <table class="preview-table">
-                  <thead><tr><th>Asal</th><th>Tujuan</th><th>Layanan</th><th>SLA</th><th>Formula ID</th><th>Formula JSON</th><th>Pelanggan</th><th>Sublayanan</th><th>Deskripsi</th></tr></thead>
+                  <thead><tr><th>Asal</th><th>Tujuan</th><th>Layanan</th><th>SLA</th><th>Formula ID</th><th>Formula JSON</th><th>Pelanggan</th><th>Sublayanan</th><th>Deskripsi</th><th>No IO KRT</th></tr></thead>
                   <tbody id="previewTableBody"></tbody>
                 </table>
               </div>
@@ -352,10 +359,10 @@
 
   <noscript><div class="noscript-message">JavaScript harus diaktifkan untuk menggunakan Pembuat Tarif Negotiable.</div></noscript>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
-  <script src="/assets/js/constants.js?v=20261016-206" defer></script>
-  <script src="/assets/js/importer.js?v=20261016-206" defer></script>
-  <script src="/assets/js/validation.js?v=20261016-206" defer></script>
-  <script src="/assets/js/export.js?v=20261016-206" defer></script>
-  <script src="/assets/js/app.js?v=20261016-206" defer></script>
+  <script src="/assets/js/constants.js?v=20261019-207" defer></script>
+  <script src="/assets/js/importer.js?v=20261019-207" defer></script>
+  <script src="/assets/js/validation.js?v=20261019-207" defer></script>
+  <script src="/assets/js/export.js?v=20261019-207" defer></script>
+  <script src="/assets/js/app.js?v=20261019-207" defer></script>
 </body>
 </html>

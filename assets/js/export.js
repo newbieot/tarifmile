@@ -21,6 +21,13 @@
   }
 
   function buildFormula(row, salesforceNumber) {
+    if (namespace.isKrt(row)) {
+      if (!String(row.baseTariff ?? '').trim()) throw new Error('Base Tariff wajib diisi.');
+      const baseTariff = requireFinite(row.baseTariff, 'Base Tariff');
+      if (baseTariff < 0) throw new Error('Base Tariff tidak boleh negatif.');
+      const formula = { base_tariff: String(baseTariff), kdlayanan_pelanggan: namespace.KRT.customerServiceCode };
+      return { object: formula, json: JSON.stringify(formula) };
+    }
     const salesforceNumeric = namespace.numericSalesforce(salesforceNumber);
     if (!Number.isFinite(salesforceNumeric)) {
       throw new Error('Nomor Salesforce harus memuat minimal satu angka.');
@@ -42,6 +49,9 @@
   }
 
   function buildExportRecord(globalValues, row) {
+    const krt = namespace.isKrt(row);
+    const internalOrder = String(globalValues.internalOrder ?? '').trim();
+    if (krt && !internalOrder) throw new Error('No IO wajib diisi untuk layanan KRT.');
     const serviceId = requireFinite(row.serviceId, 'ID Layanan');
     const sla = namespace.getSla(row.slaDays);
     if (!Number.isInteger(sla.days) || sla.days <= 0) {
@@ -67,7 +77,8 @@
       customer_type_code: protectSpreadsheetText(namespace.normalizeCustomerId(globalValues.customerId)),
       disableTariff: namespace.DEFAULTS.disableTariff,
       tariff_sub_service_code: protectSpreadsheetText(salesforceNumber),
-      tariff_sub_service_description: protectSpreadsheetText(namespace.normalizeDescription(row.description))
+      tariff_sub_service_description: protectSpreadsheetText(namespace.normalizeDescription(row.description)),
+      ...(krt ? { internal_order: protectSpreadsheetText(internalOrder) } : {})
     };
   }
 
@@ -79,14 +90,19 @@
   function buildWorksheet(records) {
     if (!root.XLSX || !root.XLSX.utils) throw new Error('SheetJS tidak tersedia. Muat ulang halaman lalu coba lagi.');
 
+    const krt = records.some((record) => namespace.isKrt({ serviceId: record.service_id }));
+    if (krt && records.some((record) => record.service_id !== namespace.KRT.serviceId)) {
+      throw new Error('Rute KRT harus diekspor ke workbook terpisah.');
+    }
+    const headers = krt ? namespace.KRT_OUTPUT_HEADERS : namespace.OUTPUT_HEADERS;
     const worksheet = {};
-    namespace.OUTPUT_HEADERS.forEach((header, columnIndex) => {
+    headers.forEach((header, columnIndex) => {
       worksheet[root.XLSX.utils.encode_cell({ r: 0, c: columnIndex })] = { v: header, t: 's' };
     });
 
     const numericColumns = new Set([2, 3, 4, 5, 10]);
     records.forEach((record, recordIndex) => {
-      namespace.OUTPUT_HEADERS.forEach((header, columnIndex) => {
+      headers.forEach((header, columnIndex) => {
         const value = record[header];
         const isNumeric = numericColumns.has(columnIndex);
         if (isNumeric && !Number.isFinite(value)) throw new Error(`Nilai angka pada ${header} tidak valid.`);
@@ -99,9 +115,9 @@
 
     worksheet['!ref'] = root.XLSX.utils.encode_range({
       s: { r: 0, c: 0 },
-      e: { r: records.length, c: namespace.OUTPUT_HEADERS.length - 1 }
+      e: { r: records.length, c: headers.length - 1 }
     });
-    worksheet['!cols'] = COLUMN_WIDTHS.map((wch) => ({ wch }));
+    worksheet['!cols'] = [...COLUMN_WIDTHS, ...(krt ? [22] : [])].map((wch) => ({ wch }));
     return worksheet;
   }
 
@@ -110,7 +126,7 @@
     const records = buildExportRecords(globalValues, rows);
     const worksheet = buildWorksheet(records);
     const workbook = root.XLSX.utils.book_new();
-    root.XLSX.utils.book_append_sheet(workbook, worksheet, namespace.DEFAULTS.worksheetName);
+    root.XLSX.utils.book_append_sheet(workbook, worksheet, getWorksheetNames(rows)[0]);
     return { workbook, worksheet, records };
   }
 
@@ -119,7 +135,22 @@
   }
 
   function getWorkspaceFilename(globalValues, rows) {
+    if (rows.length && rows.every(namespace.isKrt)) return `Tarif_KRT_${namespace.KRT.subServiceCode}.xlsx`;
     return getOutputFilename(namespace.getSalesforceNumbers(globalValues, rows).join('_') || globalValues.salesforceNumber);
+  }
+
+  function getExportGroups(rows) {
+    const standard = rows.filter((row) => !namespace.isKrt(row));
+    const krt = rows.filter(namespace.isKrt);
+    return [standard, krt].filter((group) => group.length);
+  }
+
+  function getWorkspaceFilenames(globalValues, rows) {
+    return getExportGroups(rows).map((group) => getWorkspaceFilename(globalValues, group));
+  }
+
+  function getWorksheetNames(rows) {
+    return getExportGroups(rows).map((group) => namespace.isKrt(group[0]) ? namespace.KRT.worksheetName : namespace.DEFAULTS.worksheetName);
   }
 
   function createWorkbookBlob(globalValues, rows) {
@@ -162,9 +193,15 @@
   }
 
   function generateAndDownload(globalValues, rows) {
-    const result = createWorkbookBlob(globalValues, rows);
-    downloadBlob(result.blob, result.filename);
-    return result;
+    // Prepare every file before starting downloads so a failure cannot produce a partial export.
+    const outputs = createWorkbookBlobs(globalValues, rows);
+    outputs.forEach((output) => downloadBlob(output.blob, output.filename));
+    return { ...outputs[0], outputs };
+  }
+
+  function createWorkbookBlobs(globalValues, rows) {
+    if (!Array.isArray(rows) || !rows.length) throw new Error('Minimal satu rute tarif wajib tersedia.');
+    return getExportGroups(rows).map((group) => createWorkbookBlob(globalValues, group));
   }
 
   Object.assign(namespace, {
@@ -177,7 +214,11 @@
     buildWorkbook,
     getOutputFilename,
     getWorkspaceFilename,
+    getWorkspaceFilenames,
+    getWorksheetNames,
+    getExportGroups,
     createWorkbookBlob,
+    createWorkbookBlobs,
     downloadBlob,
     generateAndDownload
   });

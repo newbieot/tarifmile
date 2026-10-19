@@ -208,6 +208,8 @@ input[aria-invalid=true],select[aria-invalid=true]{border-color:var(--danger);ba
 
 .table-shell{position:relative;flex:1;min-height:390px;max-height:calc(100vh - 425px);overflow:auto;background:#fff;scrollbar-width:thin}
 .tariff-table{width:100%;min-width:1540px;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.tariff-table.is-krt-only{min-width:1150px}
+.tariff-table.is-krt-only .standard-tariff-column{display:none!important}
 .tariff-table thead{position:sticky;top:0;z-index:12}
 .tariff-table th{height:43px;padding:.55rem .48rem;border-bottom:1px solid var(--line);background:#f8fafc;color:#475467;font-size:.56rem;font-weight:850;letter-spacing:.025em;text-align:left;text-transform:uppercase;white-space:nowrap}
 .tariff-table th:first-child,.tariff-table td:first-child{padding-left:.7rem}
@@ -399,6 +401,8 @@ input[aria-invalid=true],select[aria-invalid=true]{border-color:var(--danger);ba
   .bulk-toolbar>div{width:100%;justify-content:space-between}
   .table-shell{max-height:none;min-height:240px;overflow:visible;padding:10px;background:#f7f9fc}
   .tariff-table{display:block;width:100%;min-width:0;table-layout:auto}
+  .tariff-table.is-krt-only{min-width:0}
+  .tariff-table .krt-unused-cell{display:none!important}
   .tariff-table thead{display:none}
   .tariff-table tbody{display:grid;gap:10px}
   .tariff-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow-sm)}

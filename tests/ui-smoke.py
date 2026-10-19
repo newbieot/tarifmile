@@ -1,6 +1,7 @@
 from pathlib import Path
 import base64
 import shutil
+import os
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +64,12 @@ def check(condition, message):
 
 with sync_playwright() as p:
     chromium = shutil.which('chromium') or shutil.which('chromium-browser') or shutil.which('google-chrome')
+    if not chromium:
+        chromium = next((str(candidate) for candidate in [
+            Path(os.environ.get('PROGRAMFILES', '')) / 'Google/Chrome/Application/chrome.exe',
+            Path(os.environ.get('PROGRAMFILES(X86)', '')) / 'Microsoft/Edge/Application/msedge.exe',
+            Path(p.chromium.executable_path),
+        ] if candidate.is_file()), None)
     if not chromium:
         raise SystemExit('Chromium is required for UI smoke tests.')
     browser = p.chromium.launch(headless=True, executable_path=chromium, args=['--no-sandbox','--disable-dev-shm-usage'])
@@ -278,6 +285,97 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('#selectedFileStatus').textContent === 'Impor gagal'")
     check('ID Pelanggan berbeda' in page.locator('#importMessage').text_content(), 'Inconsistent customer error missing')
     check(page.locator('#customerId').input_value() == 'AUTO-CUSTOMER', 'Failed import changed the existing customer')
+
+    # KRT uses only Base Tariff and a required IO, without a Salesforce input.
+    page.set_content(html, wait_until='load')
+    page.set_viewport_size({'width': 1440, 'height': 1000})
+    page.fill('#customerId', 'KRT-CUSTOMER')
+    page.fill('#startDate', '2026-10-19')
+    page.fill('#endDate', '2029-09-30')
+    first = page.locator('#tariffTableBody tr').first
+    first.locator('[data-field="serviceId"]').select_option('470')
+    check(page.locator('#fieldGroupInternalOrder').is_visible(), 'KRT IO field did not appear')
+    check(page.locator('#fieldGroupSalesforce').is_hidden(), 'KRT should not ask for Salesforce')
+    check(page.locator('#primaryTariffHeader').text_content() == 'Base Tariff', 'KRT header should show Base Tariff')
+    check(first.locator('[data-field="minimumTariff"], [data-field="incrementTariff"], [data-field="minimumWeight"], [data-field="incrementWeight"]').count() == 0, 'KRT still renders standard tariff inputs')
+    check(first.locator('[data-field="formulaIdOverride"]').is_disabled(), 'KRT formula should be fixed')
+    check('1644' in first.locator('[data-field="formulaIdOverride"]').text_content(), 'KRT Formula ID mismatch')
+    first.locator('[data-field="origin"]').fill('01234')
+    first.locator('[data-field="destination"]').fill('00110')
+    first.locator('[data-field="description"]').fill('KRT CBA')
+    page.fill('#internalOrder', '00100021859')
+    check(page.locator('#exportButton').is_disabled(), 'IO alone must not bypass missing Base Tariff and SLA')
+    first.locator('[data-field="baseTariff"]').fill('10000')
+    check(page.locator('#exportButton').is_disabled(), 'Base Tariff must not bypass missing SLA')
+    first.locator('[data-field="slaDays"]').fill('14')
+    check(page.locator('#exportButton').is_enabled(), 'KRT with Base Tariff, SLA, and IO should export')
+    page.fill('#internalOrder', '   ')
+    check(page.locator('#exportButton').is_disabled(), 'Blank KRT IO must block export')
+    check('No IO wajib' in page.locator('#internalOrderError').text_content(), 'Missing KRT IO error not shown')
+    page.fill('#internalOrder', '00100021859')
+    page.click('#exportButton')
+    check('TariffCbaCustomer' in page.locator('#exportConfirmGrid').text_content(), 'KRT confirmation sheet name mismatch')
+    check('00100021859' in page.locator('#exportConfirmGrid').text_content(), 'KRT confirmation omitted IO')
+    with page.expect_download(timeout=10000) as krt_download:
+        page.click('#confirmExportButton')
+    check(krt_download.value.suggested_filename == 'Tarif_KRT_916479.xlsx', 'KRT output filename mismatch')
+    krt_sheet = page.evaluate('window.__lastWorkbook.Sheets.TariffCbaCustomer')
+    check(krt_sheet['!ref'] == 'A1:N2' and krt_sheet['N1']['v'] == 'internal_order', 'KRT 14-column output mismatch')
+    check(krt_sheet['N2'] == {'v': '00100021859', 't': 's'}, 'KRT IO must preserve leading zeroes as text')
+    check(krt_sheet['L2']['v'] == '916479', 'KRT subservice code mismatch')
+    check(krt_sheet['G2']['v'] == '{"base_tariff":"10000","kdlayanan_pelanggan":915903}', 'KRT JSON should use only Base Tariff and its customer service code')
+    page.fill('#internalOrder', 'IO-CHANGED')
+    check(page.locator('#downloadAgainButton').is_hidden(), 'Changing IO must invalidate previous download')
+    page.screenshot(path=str(ROOT / 'tests/krt-desktop-preview.png'), full_page=True)
+    page.set_viewport_size({'width': 390, 'height': 844})
+    check(page.locator('body').evaluate('(el)=>el.scrollWidth <= el.clientWidth'), 'Mobile KRT page has horizontal overflow')
+    check(first.locator('[data-field="baseTariff"]').is_visible(), 'Mobile KRT Base Tariff is hidden')
+    check(first.locator('.krt-unused-cell').first.is_hidden(), 'Mobile KRT shows unused standard columns')
+    page.screenshot(path=str(ROOT / 'tests/krt-mobile-preview.png'), full_page=True)
+    page.set_viewport_size({'width': 1440, 'height': 1000})
+
+    # Switching services restores the matching fields and keeps KRT Base Tariff.
+    first.locator('[data-field="serviceId"]').select_option('420')
+    check(page.locator('#fieldGroupInternalOrder').is_hidden(), 'Standard service still requests IO')
+    check(first.locator('[data-field="minimumTariff"]').is_visible(), 'Standard tariff input did not return')
+    check(page.locator('#fieldGroupSalesforce').is_visible(), 'Standard Salesforce input did not return')
+    check(page.locator('#exportButton').is_disabled(), 'Standard service must still require Salesforce and increment tariff')
+    first.locator('[data-field="serviceId"]').select_option('470')
+    check(first.locator('[data-field="baseTariff"]').input_value() == '10000', 'Switching service erased Base Tariff')
+
+    # Mixed services download two independent workbooks; repeat download includes both.
+    page.click('#addRowButton')
+    page.fill('#salesforceNumber', 'SF-123')
+    last = page.locator('#tariffTableBody tr').last
+    for field, value in [('origin', '29400'), ('destination', '10110'), ('slaDays', '4'), ('minimumTariff', '15000'), ('incrementTariff', '14000'), ('description', 'PKH')]:
+        last.locator(f'[data-field="{field}"]').fill(value)
+    check(page.locator('#fieldGroupInternalOrder').is_visible(), 'Mixed services must still require IO')
+    check('Tarif_Negotiable_SF-123.xlsx + Tarif_KRT_916479.xlsx' in page.locator('#exportFilename').text_content(), 'Mixed output summary omitted a file')
+    mixed_downloads = []
+    page.on('download', lambda download: mixed_downloads.append(download.suggested_filename))
+    page.click('#exportButton')
+    with page.expect_download(timeout=10000):
+        page.click('#confirmExportButton')
+    page.wait_for_function("document.querySelector('#downloadAgainButton').hidden === false")
+    page.wait_for_timeout(150)
+    check(mixed_downloads == ['Tarif_Negotiable_SF-123.xlsx', 'Tarif_KRT_916479.xlsx'], 'Mixed service exports were not split into two downloads')
+    with page.expect_download(timeout=10000):
+        page.click('#downloadAgainButton')
+    page.wait_for_timeout(150)
+    check(len(mixed_downloads) == 4, 'Repeat download omitted one of the mixed service files')
+
+    # KRT imports apply Base Tariff to all routes, and a new upload clears prior IO.
+    page.evaluate("window.XLSX._nextRows = [['RUTE KANTOR','TARIF','Layanan'],['29400|10110',12000,'CBA'],['29400|10111',13000,'CBA']]")
+    page.select_option('#importTariffType', 'krt')
+    page.set_input_files('#fileInput', str(xlsx))
+    page.wait_for_function("document.querySelector('#importedMetric').textContent === '2'")
+    check(page.locator('[data-field="baseTariff"]').count() == 2, 'KRT import did not create Base Tariff inputs for all routes')
+    check(page.locator('#internalOrder').input_value() == '', 'New import retained an IO from another upload')
+    check(page.locator('#fieldGroupSalesforce').is_hidden(), 'KRT import still asks for standard Salesforce')
+    page.fill('#internalOrder', 'NEW-IO')
+    for sla_input in page.locator('[data-field="slaDays"]').all():
+        sla_input.fill('14')
+    check(page.locator('#exportButton').is_enabled(), 'KRT import could not be completed using only SLA and IO')
 
     page.emulate_media(reduced_motion='reduce')
     check(page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches"), 'Reduced-motion mode was not recognized')

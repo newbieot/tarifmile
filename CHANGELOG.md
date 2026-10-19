@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-19
+
+- KRT memakai Service ID `470`, kode layanan pelanggan `915903`, subservice `916479`, dan Formula ID `1644`.
+- UI KRT hanya meminta Base Tariff dan menyembunyikan berat, tarif minimum, serta tarif kelipatan. JSON menggunakan `base_tariff` sesuai template CBA.
+- No IO wajib untuk KRT, berlaku pada semua rute KRT, dan diekspor sebagai teks di kolom `internal_order`.
+- Pilihan impor KRT memetakan kolom tarif menjadi Base Tariff. File baru mengosongkan IO dari unggahan sebelumnya.
+- Ekspor KRT memakai workbook terpisah `Tarif_KRT_916479.xlsx`, sheet `TariffCbaCustomer`, dengan 14 kolom. Layanan lain tetap memakai format 13 kolom.
+- Pratinjau, konfirmasi, unduhan campuran, dan unduh kembali mengikuti kedua jenis workbook. Cache key aset `20261019-207`.
+
 ## 2026-10-16
 
 - Perbaikan ekspor: tarif duplikat tidak lagi dikosongkan. Tarif tertinggi dari Excel dipakai per rute dan layanan; variasi harga tetap diberi peringatan beserta nomor baris sumber, tanpa mengunci ekspor.

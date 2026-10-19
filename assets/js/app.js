@@ -25,6 +25,7 @@
       'customerId', 'salesforceNumber', 'salesforcePe', 'salesforceLabel', 'salesforceHelp', 'startDate', 'endDate', 'setupCompletion',
       'customerError', 'salesforceError', 'salesforcePeError', 'startError', 'endError',
       'fieldGroupCustomer', 'fieldGroupSalesforce', 'fieldGroupSalesforcePe', 'fieldGroupStart', 'fieldGroupEnd',
+      'internalOrder', 'internalOrderError', 'fieldGroupInternalOrder', 'tariffTable', 'primaryTariffHeader',
       'dropzone', 'fileInput', 'importTariffType', 'fileCard', 'selectedFileName', 'selectedFileMeta', 'selectedFileStatus',
       'replaceFileButton', 'removeFileButton', 'progressBox', 'progressTitle', 'progressDetail',
       'importMessage', 'importSummary', 'sourceRowsMetric', 'importedMetric', 'duplicatesMetric',
@@ -74,6 +75,7 @@
     return {
       customerId: dom.customerId.value,
       salesforceNumber: dom.salesforceNumber.value,
+      internalOrder: dom.internalOrder.value,
       ...(state.useServiceSalesforce ? { salesforceByService: { 420: dom.salesforceNumber.value, 411: dom.salesforcePe.value } } : {}),
       startDate: dom.startDate.value,
       endDate: dom.endDate.value
@@ -81,7 +83,12 @@
   }
 
   function renderSalesforceFields() {
-    dom.fieldGroupSalesforcePe.hidden = !state.useServiceSalesforce;
+    const hasKrt = state.rows.some(T.isKrt);
+    const standardRows = state.rows.filter((row) => !T.isKrt(row));
+    dom.fieldGroupInternalOrder.hidden = !hasKrt;
+    dom.internalOrder.required = hasKrt;
+    dom.fieldGroupSalesforce.hidden = !standardRows.some((row) => !state.useServiceSalesforce || Number(row.serviceId) !== 411);
+    dom.fieldGroupSalesforcePe.hidden = !state.useServiceSalesforce || !standardRows.some((row) => Number(row.serviceId) === 411);
     dom.salesforceLabel.firstChild.textContent = state.useServiceSalesforce ? 'Nomor Salesforce PKH ' : 'Nomor Salesforce ';
     dom.salesforceLabel.querySelector('span').textContent = state.useServiceSalesforce ? 'Untuk PKH' : 'Wajib';
     dom.salesforceHelp.textContent = state.useServiceSalesforce
@@ -135,6 +142,14 @@
     const select = document.createElement('select');
     select.dataset.field = 'formulaIdOverride';
     select.setAttribute('aria-label', `Formula ID untuk rute ${row.id}`);
+    if (T.isKrt(row)) {
+      const option = document.createElement('option');
+      option.value = String(row.formulaIdOverride ?? '');
+      option.textContent = `${T.KRT.formulaId} · KRT`;
+      select.appendChild(option);
+      select.disabled = true;
+      return select;
+    }
     const automatic = document.createElement('option');
     const mapped = T.getServiceFormulaId(row.serviceId);
     automatic.value = '';
@@ -198,7 +213,8 @@
     const serviceText = document.createElement('span');
     serviceText.textContent = T.getServiceLabel(row.serviceId);
     const tariffText = document.createElement('span');
-    tariffText.textContent = row.minimumTariff === '' ? 'Tarif belum lengkap' : `Rp ${Number(row.minimumTariff).toLocaleString('id-ID')}`;
+    const tariff = T.isKrt(row) ? row.baseTariff : row.minimumTariff;
+    tariffText.textContent = tariff === '' ? 'Tarif belum lengkap' : `Rp ${Number(tariff).toLocaleString('id-ID')}`;
     const status = document.createElement('span');
     status.className = `status-badge ${result.status}`;
     status.dataset.role = 'row-status';
@@ -219,6 +235,7 @@
   function createRowElement(row, rowIndex, result) {
     const tr = document.createElement('tr');
     tr.dataset.rowId = row.id;
+    const krt = T.isKrt(row);
     if (row.selected) tr.classList.add('is-selected');
     if (row.expanded) tr.classList.add('is-expanded');
     if (result.status === 'invalid' || result.status === 'incomplete') tr.classList.add('is-invalid');
@@ -266,10 +283,19 @@
     slaBox.append(slaDays, slaHours);
     tr.appendChild(createCell('SLA (hari)', slaBox, 'slaDays'));
 
-    tr.appendChild(createCell('Berat Minimum', createInput(row, 'minimumWeight', 'number', { min: '1', step: '1', inputmode: 'numeric' }), 'minimumWeight'));
-    tr.appendChild(createCell('Tarif Minimum', createInput(row, 'minimumTariff', 'number', { min: '0', step: '1', inputmode: 'decimal', placeholder: '0' }), 'minimumTariff'));
-    tr.appendChild(createCell('Berat Kelipatan', createInput(row, 'incrementWeight', 'number', { min: '1', step: '1', inputmode: 'numeric' }), 'incrementWeight'));
-    tr.appendChild(createCell('Tarif Kelipatan', createInput(row, 'incrementTariff', 'number', { min: '0', step: '1', inputmode: 'decimal', placeholder: '0' }), 'incrementTariff'));
+    function standardTariffCell(label, field, min) {
+      const child = krt ? document.createElement('span') : createInput(row, field, 'number', { min, step: '1', inputmode: 'decimal', placeholder: '0' });
+      if (krt) child.textContent = '—';
+      const cell = createCell(label, child, krt ? null : field);
+      cell.classList.add('standard-tariff-column');
+      if (krt) cell.classList.add('krt-unused-cell');
+      return cell;
+    }
+    tr.appendChild(standardTariffCell('Berat Minimum', 'minimumWeight', '1'));
+    const tariffField = krt ? 'baseTariff' : 'minimumTariff';
+    tr.appendChild(createCell(krt ? 'Base Tariff' : 'Tarif Minimum', createInput(row, tariffField, 'number', { min: '0', step: '1', inputmode: 'decimal', placeholder: '0' }), tariffField));
+    tr.appendChild(standardTariffCell('Berat Kelipatan', 'incrementWeight', '1'));
+    tr.appendChild(standardTariffCell('Tarif Kelipatan', 'incrementTariff', '0'));
     tr.appendChild(createCell('Deskripsi', createInput(row, 'description', 'text', { placeholder: 'Deskripsi tarif', spellcheck: 'false' }), 'description'));
 
     const actions = document.createElement('div');
@@ -312,6 +338,9 @@
 
   function renderRows() {
     const visibleRows = filteredRows();
+    const onlyKrt = visibleRows.length > 0 && visibleRows.every(T.isKrt);
+    dom.tariffTable.classList.toggle('is-krt-only', onlyKrt);
+    dom.primaryTariffHeader.textContent = onlyKrt ? 'Base Tariff' : visibleRows.some(T.isKrt) ? 'Tarif / Base Tariff' : 'Tarif Minimum';
     const fragment = document.createDocumentFragment();
     visibleRows.forEach((row) => {
       fragment.appendChild(createRowElement(row, state.rows.indexOf(row), validationFor(row.id)));
@@ -351,7 +380,7 @@
       }
     });
     const formulaSelect = tr.querySelector('[data-field="formulaIdOverride"]');
-    if (formulaSelect && formulaSelect.options[0]) {
+    if (formulaSelect && formulaSelect.options[0] && !T.isKrt(row)) {
       const mappedFormula = T.getServiceFormulaId(row.serviceId);
       formulaSelect.options[0].textContent = Number.isFinite(mappedFormula)
         ? `Otomatis · ${mappedFormula}`
@@ -369,7 +398,8 @@
     if (mobileMeta) {
       const spans = mobileMeta.querySelectorAll(':scope > span');
       if (spans[0]) spans[0].textContent = T.getServiceLabel(row.serviceId);
-      if (spans[1]) spans[1].textContent = row.minimumTariff === '' ? 'Tarif belum lengkap' : `Rp ${Number(row.minimumTariff).toLocaleString('id-ID')}`;
+      const tariff = T.isKrt(row) ? row.baseTariff : row.minimumTariff;
+      if (spans[1]) spans[1].textContent = tariff === '' ? 'Tarif belum lengkap' : `Rp ${Number(tariff).toLocaleString('id-ID')}`;
     }
   }
 
@@ -379,6 +409,7 @@
       ['customerId', 'customerError', 'fieldGroupCustomer'],
       ['salesforceNumber', 'salesforceError', 'fieldGroupSalesforce'],
       ['salesforcePe', 'salesforcePeError', 'fieldGroupSalesforcePe'],
+      ['internalOrder', 'internalOrderError', 'fieldGroupInternalOrder'],
       ['startDate', 'startError', 'fieldGroupStart'],
       ['endDate', 'endError', 'fieldGroupEnd']
     ];
@@ -414,7 +445,7 @@
   function renderWorkflow() {
     const steps = Array.from(document.querySelectorAll('.workflow-step'));
     const globalComplete = state.validation.globals.valid;
-    const importedOrEdited = state.selectedFile || state.rows.some((row) => row.origin || row.destination || row.minimumTariff !== '' || row.description);
+    const importedOrEdited = state.selectedFile || state.rows.some((row) => row.origin || row.destination || row.minimumTariff !== '' || row.baseTariff !== '' || row.description);
     const validated = state.validation.exportable;
     const exported = Boolean(state.generated);
     const complete = [globalComplete, importedOrEdited, validated, exported];
@@ -456,7 +487,8 @@
       addPreviewItem('Periode Berlaku', globalValues.startDate && globalValues.endDate ? `${globalValues.startDate} → ${globalValues.endDate}` : '—'),
       addPreviewItem('Rute Siap', String(records.length)),
       addPreviewItem('Layanan', services),
-      addPreviewItem('Lembar Kerja', T.DEFAULTS.worksheetName)
+      addPreviewItem('Lembar Kerja', T.getWorksheetNames(state.rows).join(' + ')),
+      ...(state.rows.some(T.isKrt) ? [addPreviewItem('No IO KRT', globalValues.internalOrder.trim() || 'Belum diisi')] : [])
     );
 
     const fragment = document.createDocumentFragment();
@@ -471,7 +503,8 @@
         record.tariff_formula_data,
         record.customer_type_code,
         record.tariff_sub_service_code,
-        record.tariff_sub_service_description
+        record.tariff_sub_service_description,
+        record.internal_order || '—'
       ].forEach((value) => {
         const td = document.createElement('td');
         td.textContent = value;
@@ -484,7 +517,7 @@
 
   function renderExportBar() {
     const globalValues = getGlobalValues();
-    const filename = T.getSalesforceNumbers(globalValues, state.rows).length ? T.getWorkspaceFilename(globalValues, state.rows) : 'Tarif_Negotiable_<Nomor Salesforce>.xlsx';
+    const filename = T.getSalesforceNumbers(globalValues, state.rows).length ? T.getWorkspaceFilenames(globalValues, state.rows).join(' + ') : 'Tarif_Negotiable_<Nomor Salesforce>.xlsx';
     dom.exportFilename.textContent = `File keluaran: ${filename}`;
     dom.exportButton.disabled = !state.validation.exportable || state.processing || !root.XLSX;
     if (!root.XLSX) dom.exportHeadline.textContent = 'SheetJS tidak tersedia. Periksa koneksi lalu muat ulang halaman.';
@@ -513,6 +546,7 @@
 
   function refresh(options) {
     const opts = options || {};
+    renderSalesforceFields();
     state.validation = T.validateWorkspace(getGlobalValues(), state.rows);
     renderGlobalValidation();
     renderValidationSummary();
@@ -558,6 +592,7 @@
         slaDays: row.slaDays,
         minimumWeight: row.minimumWeight,
         minimumTariff: row.minimumTariff,
+        baseTariff: row.baseTariff,
         incrementWeight: row.incrementWeight,
         incrementTariff: row.incrementTariff,
         description: row.description,
@@ -664,6 +699,7 @@
       dom.statusFilter.value = 'all';
       dom.serviceFilter.value = 'all';
       const customerData = result.customerData;
+      dom.internalOrder.value = '';
       if (customerData.customerId !== undefined) dom.customerId.value = customerData.customerId;
       state.useServiceSalesforce = Boolean(customerData.salesforceByService);
       if (state.useServiceSalesforce) {
@@ -678,7 +714,7 @@
       renderSalesforceFields();
       renderImportSummary(result.summary);
       renderFileCard(file, `${result.summary.routesImported} rute diimpor dari ${result.sheetName}`);
-      const slaNote = result.header.channels && result.header.channels.length ? ' SLA otomatis: PKH 4 hari, PE 2 hari.' : ' Isi SLA.';
+      const slaNote = state.rows.some(T.isKrt) ? ' Isi SLA dan No IO KRT.' : result.header.channels && result.header.channels.length ? ' SLA otomatis: PKH 4 hari, PE 2 hari.' : ' Isi SLA.';
       setImportMessage(`${result.summary.routesImported} rute tarif berhasil diimpor.${slaNote} Tinjau baris yang disorot sebelum ekspor.`, 'success');
       showToast('Rute tarif berhasil diimpor.', 'success');
       announce(`${result.summary.routesImported} rute tarif diimpor.`);
@@ -718,6 +754,7 @@
     dom.customerId.value = '';
     dom.salesforceNumber.value = '';
     dom.salesforcePe.value = '';
+    dom.internalOrder.value = '';
     state.useServiceSalesforce = false;
     renderSalesforceFields();
     dom.startDate.value = '';
@@ -749,8 +786,9 @@
       ['Rute dengan Peringatan', String(state.validation.rows.counts.needsReview)],
       ...(state.importSummary && state.importSummary.conflictingTariffRoutes ? [['Aturan Tarif Duplikat', 'Memakai tarif tertinggi dari Excel; perbedaan harga tetap diberi peringatan.']] : []),
       ['Layanan Terpilih', serviceNames],
-      ['Nama File Keluaran', T.getWorkspaceFilename(globals, state.rows)],
-      ['Lembar Kerja', T.DEFAULTS.worksheetName]
+      ['Nama File Keluaran', T.getWorkspaceFilenames(globals, state.rows).join(' + ')],
+      ['Lembar Kerja', T.getWorksheetNames(state.rows).join(' + ')],
+      ...(state.rows.some(T.isKrt) ? [['No IO KRT', globals.internalOrder.trim()], ['Kode KRT', `Layanan pelanggan ${T.KRT.customerServiceCode} · Subservice ${T.KRT.subServiceCode}`]] : [])
     ];
   }
 
@@ -774,7 +812,7 @@
     root.setTimeout(() => {
       try {
         const generated = T.generateAndDownload(getGlobalValues(), state.rows);
-        state.generated = { blob: generated.blob, filename: generated.filename, createdAt: Date.now() };
+        state.generated = { outputs: generated.outputs.map(({ blob, filename }) => ({ blob, filename })), createdAt: Date.now() };
         setProgress('Unduhan siap', 'Workbook berhasil dibuat.', true);
         showToast('Workbook berhasil dibuat.', 'success');
         announce('Workbook berhasil dibuat.');
@@ -792,7 +830,7 @@
   function downloadAgain() {
     if (!state.generated) return;
     try {
-      T.downloadBlob(state.generated.blob, state.generated.filename);
+      state.generated.outputs.forEach((output) => T.downloadBlob(output.blob, output.filename));
       showToast('Unduhan workbook dimulai kembali.', 'success');
     } catch (_) {
       showToast('Workbook tidak dapat diunduh kembali. Buat workbook baru.', 'error');
@@ -800,7 +838,7 @@
   }
 
   function bindGlobalEvents() {
-    [dom.customerId, dom.salesforceNumber, dom.salesforcePe, dom.startDate, dom.endDate].forEach((input) => {
+    [dom.customerId, dom.salesforceNumber, dom.salesforcePe, dom.internalOrder, dom.startDate, dom.endDate].forEach((input) => {
       input.addEventListener('input', () => { clearGenerated(); refresh(); });
       input.addEventListener('change', () => { clearGenerated(); refresh(); });
     });
@@ -829,11 +867,11 @@
 
     dom.addRowButton.addEventListener('click', () => addRow());
     dom.resetRowsButton.addEventListener('click', async () => {
-      const meaningful = state.rows.some((row) => row.origin || row.destination || row.minimumTariff !== '' || row.description);
+      const meaningful = state.rows.some((row) => row.origin || row.destination || row.minimumTariff !== '' || row.baseTariff !== '' || row.description);
       if (!meaningful || await confirmAction('Atur ulang baris tarif?', 'Semua rute hasil impor dan edit manual akan diganti dengan satu baris kosong. Data pelanggan tetap dipertahankan.', 'Atur Ulang Baris')) resetRows();
     });
     dom.clearWorkspaceButton.addEventListener('click', async () => {
-      const meaningful = state.rows.some((row) => row.origin || row.destination || row.minimumTariff !== '' || row.description) || Object.values(getGlobalValues()).some(Boolean);
+      const meaningful = state.rows.some((row) => row.origin || row.destination || row.minimumTariff !== '' || row.baseTariff !== '' || row.description) || Object.values(getGlobalValues()).some(Boolean);
       if (!meaningful || await confirmAction('Bersihkan ruang kerja?', 'Data pelanggan, file terpilih, baris tarif, filter, pesan, dan referensi workbook akan dihapus.', 'Bersihkan Ruang Kerja')) clearWorkspace();
     });
 
@@ -872,7 +910,7 @@
       const row = state.rows.find((item) => item.id === tr.dataset.rowId);
       if (!row) return;
       row[field] = event.target.type === 'number' ? event.target.value : event.target.value;
-      if (['origin', 'destination', 'minimumTariff', 'description'].includes(field)) {
+      if (['origin', 'destination', 'minimumTariff', 'baseTariff', 'description'].includes(field)) {
         row.importNeedsReview = false;
         row.importReviewMessage = '';
       }
@@ -886,13 +924,15 @@
       if (!row) return;
       if (event.target.dataset.field === 'serviceId') {
         row.serviceId = Number(event.target.value);
+        if (T.isKrt(row) && row.baseTariff === '') row.baseTariff = row.minimumTariff;
+        else if (!T.isKrt(row) && row.minimumTariff === '') row.minimumTariff = row.baseTariff;
         const serviceDefaults = Object.values(T.ZONE_TARIFF_TYPES).find((service) => service.serviceId === row.serviceId);
         if (serviceDefaults) {
           row.slaDays = serviceDefaults.slaDays;
           tr.querySelector('[data-field="slaDays"]').value = row.slaDays;
         }
         clearGenerated();
-        refresh({ rowId: row.id });
+        refresh({ renderRows: true });
       } else if (event.target.dataset.field === 'formulaIdOverride') {
         row.formulaIdOverride = event.target.value;
         clearGenerated();
@@ -913,7 +953,7 @@
         refresh({ rowId: row.id });
       } else if (button.dataset.action === 'duplicate') duplicateRows([row]);
       else if (button.dataset.action === 'delete') {
-        const hasData = row.origin || row.destination || row.minimumTariff !== '' || row.description;
+        const hasData = row.origin || row.destination || row.minimumTariff !== '' || row.baseTariff !== '' || row.description;
         if (!hasData || await confirmAction('Hapus baris tarif?', 'Rute tarif ini akan dihapus dari ruang kerja.', 'Hapus Baris')) deleteRows([row.id]);
       }
     });

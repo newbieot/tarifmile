@@ -5,6 +5,13 @@
 
   const APP_VERSION = '2.0.1';
   const PJE_FORMULA_ID = 1644;
+  const KRT = Object.freeze({
+    serviceId: 470,
+    customerServiceCode: 915903,
+    subServiceCode: '916479',
+    formulaId: 1644,
+    worksheetName: 'TariffCbaCustomer'
+  });
 
   // Formula ID mengikuti tabel referensi operasional yang diberikan pada
   // 14 Agustus 2026. Nilai null berarti tabel referensi tidak menyediakan
@@ -17,7 +24,7 @@
     Object.freeze({ id: 481, name: 'KBM', formulaId: null }),
     Object.freeze({ id: 408, name: 'Q9', formulaId: 1288 }),
     Object.freeze({ id: 453, name: 'PJM', formulaId: 1672 }),
-    Object.freeze({ id: 470, name: 'KRT', formulaId: 1701 }),
+    Object.freeze({ id: KRT.serviceId, name: 'KRT', formulaId: KRT.formulaId }),
     Object.freeze({ id: 446, name: 'EC3', formulaId: 1288 }),
     Object.freeze({ id: 483, name: 'PPB_SEKOGRAM', formulaId: 1711 }),
     Object.freeze({ id: 485, name: 'PPB_KARTUPOS', formulaId: 1711 }),
@@ -66,6 +73,12 @@
     worksheetName: 'TariffCustomer'
   });
 
+  const KRT_OUTPUT_HEADERS = Object.freeze([...OUTPUT_HEADERS, 'internal_order']);
+
+  function isKrt(row) {
+    return Number(row && row.serviceId) === KRT.serviceId;
+  }
+
   let rowSequence = 0;
 
   function createRowId() {
@@ -84,6 +97,7 @@
       slaDays: source.slaDays ?? '',
       minimumWeight: source.minimumWeight ?? DEFAULTS.minimumWeight,
       minimumTariff: source.minimumTariff ?? '',
+      baseTariff: source.baseTariff ?? '',
       incrementWeight: source.incrementWeight ?? DEFAULTS.incrementWeight,
       incrementTariff: source.incrementTariff ?? '',
       description: String(source.description ?? ''),
@@ -159,6 +173,7 @@
   }
 
   function getSalesforceNumber(values, row) {
+    if (isKrt(row)) return KRT.subServiceCode;
     const codes = values.salesforceByService;
     const code = codes && Object.prototype.hasOwnProperty.call(codes, row.serviceId)
       ? codes[row.serviceId] : values.salesforceNumber;
@@ -170,7 +185,7 @@
   }
 
   function getSalesforceSummary(values, rows) {
-    if (!values.salesforceByService) return String(values.salesforceNumber ?? '').trim();
+    if (!values.salesforceByService && !rows.some(isKrt)) return String(values.salesforceNumber ?? '').trim();
     const serviceIds = [...new Set(rows.map((row) => Number(row.serviceId)))];
     return serviceIds.map((serviceId) => {
       const service = getService(serviceId);
@@ -181,6 +196,9 @@
   Object.assign(namespace, {
     APP_VERSION,
     PJE_FORMULA_ID,
+    KRT,
+    KRT_OUTPUT_HEADERS,
+    isKrt,
     SERVICES,
     FORMULA_OVERRIDE_OPTIONS,
     OUTPUT_HEADERS,
